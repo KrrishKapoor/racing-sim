@@ -123,6 +123,31 @@ export class InputController {
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"] as const)
       root.addEventListener(type, release, { signal });
 
+    // Secondary touches do not consistently generate clicks. Activate menu
+    // buttons on release, then suppress only the duplicate native touch click.
+    // Keyboard/programmatic clicks (detail 0) and desktop clicks stay native.
+    const touchPresses = new WeakMap<HTMLButtonElement, number>();
+    root.addEventListener("pointerup", (event) => {
+      if (!touch.matches || event.pointerType !== "touch") return;
+      const button = (event.target as Element).closest<HTMLButtonElement>("button:not([data-control])");
+      if (!button || button.disabled) return;
+      event.preventDefault();
+      touchPresses.set(button, performance.now());
+      const rect = button.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX >= rect.right ||
+          event.clientY < rect.top || event.clientY >= rect.bottom) return;
+      button.click();
+    }, { signal });
+    root.addEventListener("click", (event) => {
+      if (!touch.matches || (event instanceof PointerEvent && event.pointerType === "mouse")) return;
+      const button = (event.target as Element).closest<HTMLButtonElement>("button");
+      if (button && event.isTrusted && event.detail > 0 &&
+          performance.now() - (touchPresses.get(button) ?? -Infinity) < 700) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, { capture: true, signal });
+
     // WebKit's callout/selection and gesture handling are separate from Pointer Events.
     const prevent = (event: Event) => { if (touch.matches) event.preventDefault(); };
     for (const type of ["contextmenu", "selectstart", "gesturestart", "gesturechange", "gestureend"])

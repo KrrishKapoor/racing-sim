@@ -86,10 +86,13 @@
   .hud-lb.is-expanded .hud-lb__list {
     display: block;
     max-height: calc(55cqh - var(--safe-top) - 112px);
+    max-height: round(down, calc(55cqh - var(--safe-top) - 112px), 24px);
     margin: 0;
-    padding-bottom: 6px;
+    padding: 0;
   }
   .hud-lb__row { height: 24px; padding: 0 10px; }
+  /* Position is always in the strip/pill; don't pin a row over a short list. */
+  .hud-lb__list .hud-lb__row.is-player { position: relative; top: auto; bottom: auto; background: #23301b; }
   .hud-map {
     display: block;
     top: calc(var(--safe-top) + 64px);
@@ -217,7 +220,10 @@
   .hud-position { margin-left: 0; }
   .hud-lb, .hud-map { top: calc(var(--safe-top) + 100px); }
   .hud-lb.is-expanded { width: 200px; }
-  .hud-lb.is-expanded .hud-lb__list { max-height: calc(55cqh - var(--safe-top) - 148px); }
+  .hud-lb.is-expanded .hud-lb__list {
+    max-height: calc(55cqh - var(--safe-top) - 148px);
+    max-height: round(down, calc(55cqh - var(--safe-top) - 148px), 24px);
+  }
   .hud-speed { width: min(120px, 32%); bottom: calc(var(--safe-bottom) + 158px); }
   .hud-speed__read { flex-direction: column; align-items: center; gap: 2px; }
   .hud-speed__num { font-size: 28px; }

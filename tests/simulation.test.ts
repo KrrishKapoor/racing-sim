@@ -243,53 +243,156 @@ test("optimized line stays on asphalt, closes smoothly, and beats the centerline
   assert.ok(Math.hypot(a.x - b.x, a.y - b.y) < 0.001);
 });
 
-test("difficulty affects launch, braking and actual lap pace; ten-car fields finish", () => {
+/** Check the whole body, not merely the centre or the delayed off-track flag. */
+function asphaltExtent(car: ReturnType<typeof createCar>, track: Track): number {
+  let extent = 0;
+  const c = Math.cos(car.heading), s = Math.sin(car.heading);
+  for (const x of [-23, 23]) for (const y of [-13, 13]) {
+    extent = Math.max(extent, track.project({
+      x: car.x + x * c - y * s,
+      y: car.y + x * s + y * c,
+    }).distanceFromCenter);
+  }
+  return extent;
+}
+
+test("Hard uses human-competitive lap pace; difficulties separate and entire ten-car fields stay on asphalt", () => {
   const track = new Track();
-  const times: number[] = [],
-    launches: number[] = [];
+  const flying: number[] = [], launches: number[] = [];
   for (const difficulty of ["easy", "medium", "hard"] as Difficulty[]) {
     const solo = createCar(track, "nova", "Nova", "#fff", 0);
-    launches.push(getAIInput(solo, track, [solo], difficulty).throttle);
-    const race = new Race(track, [solo], 1);
-    for (
-      let step = 0;
-      step < 120 * 80 && race.drivers.get(solo.id)!.finishTime === null;
-      step++
-    ) {
+    const launchCar = createCar(track, "launch", "Launch", "#fff", 0);
+    launches.push(getAIInput(launchCar, track, [launchCar], difficulty).throttle);
+    const race = new Race(track, [solo], 4);
+    let soloExtent = 0;
+    for (let step = 0; step < 120 * 130 && race.drivers.get(solo.id)!.finishTime === null; step++) {
       stepCar(solo, getAIInput(solo, track, [solo], difficulty), track, dt);
+      soloExtent = Math.max(soloExtent, asphaltExtent(solo, track));
       race.step([solo], dt);
     }
-    const time = race.drivers.get(solo.id)!.finishTime;
-    assert.ok(time !== null);
-    times.push(time);
-    const cars = createGrid(track, { difficulty, cars: 10, laps: 1 });
-    const packRace = new Race(track, cars, 1);
-    for (
-      let step = 0;
-      step < 120 * 150 &&
-      packRace.standings().some((d) => d.finishTime === null);
-      step++
-    ) {
-      for (const car of cars)
-        stepCar(car, getAIInput(car, track, cars, difficulty), track, dt);
+    const laps = race.drivers.get(solo.id)!.laps;
+    assert.equal(laps.length, 4);
+    const mean = laps.slice(1).reduce((sum, lap) => sum + lap, 0) / 3;
+    flying.push(mean);
+    assert.ok(soloExtent < track.width / 2, `${difficulty} solo body leaves asphalt: ${soloExtent}`);
+    if (difficulty === "hard") {
+      assert.ok(laps[0] < 17, `Hard standing-start lap: ${laps[0]}`);
+      assert.ok(laps.slice(1).every((lap) => lap > 13.5 && lap < 17), `Hard flying laps: ${laps}`);
+    }
+    const cars = createGrid(track, { difficulty, cars: 10, laps: 4 });
+    const packRace = new Race(track, cars, 4);
+    let packExtent = 0;
+    for (let step = 0; step < 120 * 150 && packRace.standings().some((d) => d.finishTime === null); step++) {
+      const inputs = cars.map((car) => getAIInput(car, track, cars, difficulty));
+      cars.forEach((car, i) => stepCar(car, inputs[i], track, dt));
       resolveCarCollisions(cars);
-      for (const car of cars) constrainToTrack(car, track);
+      for (const car of cars) {
+        constrainToTrack(car, track);
+        const extent = asphaltExtent(car, track);
+        packExtent = Math.max(packExtent, extent);
+        assert.ok(extent < track.width / 2,
+          `${difficulty} ${car.id} body leaves asphalt at step ${step}: ${extent}`);
+      }
       packRace.step(cars, dt);
     }
-    assert.ok(
-      packRace.standings().every((d) => d.finishTime !== null),
-      `${difficulty} field must finish`,
-    );
+    assert.ok(packRace.standings().every((d) => d.finishTime !== null), `${difficulty} ten-car field must finish`);
+    console.log(`${difficulty}: standing ${laps[0].toFixed(3)}s; flying mean ${mean.toFixed(3)}s; 10-car maximum body extent ${packExtent.toFixed(2)} / ${track.width / 2}, zero off-asphalt steps`);
   }
   assert.ok(launches[0] < launches[1] && launches[1] < launches[2]);
-  assert.ok(
-    times[1] < times[0] * 0.9 && times[2] < times[1] * 0.95,
-    `lap times easy/medium/hard: ${times}`,
-  );
-  console.log(
-    `Difficulty lap times easy/medium/hard: ${times.map((t) => t.toFixed(2)).join(" / ")} s`,
-  );
+  assert.ok(flying[1] < flying[0] * 0.9 && flying[2] < flying[1] * 0.93, `Easy/Medium/Hard flying laps: ${flying}`);
 });
+
+test("Hard passes slower cars on either side, including a stopped car, without contact or cutting", () => {
+  const track = new Track();
+  for (const side of [-25, 0, 25]) for (const obstacleSpeed of [0, 160]) {
+    const ai = createCar(track, "nova", "Nova", "#fff", 0);
+    const slow = createCar(track, "slow", "Slow", "#fff", 0);
+    Object.assign(ai, track.pointAt(100, side));
+    let slowDistance = 300;
+    Object.assign(slow, track.pointAt(slowDistance, side));
+    for (const car of [ai, slow]) {
+      const speed = car === ai ? 350 : obstacleSpeed;
+      car.vx = Math.cos(car.heading) * speed;
+      car.vy = Math.sin(car.heading) * speed;
+      car.speed = speed;
+      car.projection = track.project(car);
+    }
+    let passed = false;
+    for (let i = 0; i < 120 * 12; i++) {
+      slowDistance += obstacleSpeed * dt;
+      Object.assign(slow, track.pointAt(slowDistance, side));
+      slow.projection = track.project(slow);
+      slow.vx = Math.cos(slow.heading) * obstacleSpeed;
+      slow.vy = Math.sin(slow.heading) * obstacleSpeed;
+      stepCar(ai, getAIInput(ai, track, [ai, slow], "hard"), track, dt);
+      assert.ok(Math.hypot(ai.x - slow.x, ai.y - slow.y) >= 37, `contact while passing offset ${side} at ${obstacleSpeed}`);
+      assert.ok(asphaltExtent(ai, track) < track.width / 2);
+      if (ai.projection.distance > slow.projection.distance + 70) { passed = true; break; }
+    }
+    assert.ok(passed, `stuck behind offset ${side} at speed ${obstacleSpeed}`);
+  }
+});
+
+test("Hard abandons a blocked passing lane and completes the pass on the other side", () => {
+  const track = new Track();
+  const ai = createCar(track, "nova", "Nova", "#fff", 0);
+  const slow = createCar(track, "slow", "Slow", "#fff", 0);
+  const blocker = createCar(track, "blocker", "Blocker", "#fff", 0);
+  Object.assign(ai, track.pointAt(50));
+  ai.vx = Math.cos(ai.heading) * 300;
+  ai.vy = Math.sin(ai.heading) * 300;
+  ai.speed = 300;
+  ai.projection = track.project(ai);
+  let minimumOffset = 0, maximumOffset = 0, passed = false;
+  for (let i = 0; i < 120 * 10; i++) {
+    const distance = 300 + 140 * i * dt;
+    for (const [car, d, offset] of [[slow, distance, 0], [blocker, distance + 90, -40]] as const) {
+      Object.assign(car, track.pointAt(d, offset));
+      car.projection = track.project(car);
+      car.vx = Math.cos(car.heading) * 140;
+      car.vy = Math.sin(car.heading) * 140;
+      car.speed = 140;
+    }
+    // A previously unseen car blocks the initially selected left lane.
+    const traffic = i > 60 ? [ai, slow, blocker] : [ai, slow];
+    stepCar(ai, getAIInput(ai, track, traffic, "hard"), track, dt);
+    minimumOffset = Math.min(minimumOffset, ai.projection.offset);
+    maximumOffset = Math.max(maximumOffset, ai.projection.offset);
+    for (const car of traffic) if (car !== ai)
+      assert.ok(Math.hypot(ai.x - car.x, ai.y - car.y) >= 37);
+    assert.ok(asphaltExtent(ai, track) < track.width / 2);
+    if (ai.projection.distance > blocker.projection.distance + 70) { passed = true; break; }
+  }
+  assert.ok(minimumOffset < -15 && maximumOffset > 30, "must switch sides rather than queue behind the blocker");
+  assert.ok(passed);
+});
+
+test("Hard covers the inside of a braking zone when a faster car threatens from behind", () => {
+  const track = new Track();
+  const front = createCar(track, "front", "Front", "#fff", 0);
+  const solo = createCar(track, "solo", "Solo", "#fff", 0);
+  const rear = createCar(track, "rear", "Rear", "#fff", 0);
+  for (const car of [front, solo]) {
+    Object.assign(car, track.pointAt(800));
+    car.vx = Math.cos(car.heading) * 400;
+    car.vy = Math.sin(car.heading) * 400;
+    car.speed = 400;
+    car.projection = track.project(car);
+  }
+  for (let i = 0; i < 72; i++) {
+    Object.assign(rear, track.pointAt(front.projection.distance - 130));
+    rear.vx = Math.cos(rear.heading) * 440;
+    rear.vy = Math.sin(rear.heading) * 440;
+    rear.speed = 440;
+    rear.projection = track.project(rear);
+    stepCar(front, getAIInput(front, track, [front, rear], "hard"), track, dt);
+    stepCar(solo, getAIInput(solo, track, [solo], "hard"), track, dt);
+    assert.ok(asphaltExtent(front, track) < track.width / 2);
+    assert.ok(Math.hypot(front.x - rear.x, front.y - rear.y) > 37);
+  }
+  assert.ok(front.projection.offset < solo.projection.offset - 8, "defend the inside of the left-hand corner");
+});
+
 
 test("personal bests, race formats and wins persist across store reloads", () => {
   const memory = new Map<string, string>();

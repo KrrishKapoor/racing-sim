@@ -26,7 +26,7 @@ export class RacingLine {
   readonly points: RacingPoint[];
   readonly predictedLapTime: number;
   readonly centerlineLapTime: number;
-  readonly margin = 25;
+  readonly margin = 40;
   private readonly step: number;
   private readonly count = 180;
 
@@ -95,7 +95,9 @@ export class RacingLine {
         points,
         speeds,
         curvatures,
-        time: lengths.reduce(
+        // Avoid collapsed/reversed segments at the tight hairpin. Those can
+        // falsely improve the numerical score while creating an undriveable cusp.
+        time: lengths.some((length) => length < this.step * 0.45) ? Infinity : lengths.reduce(
           (sum, length, i) =>
             sum + (2 * length) / (speeds[i] + speeds[(i + 1) % this.count]),
           0,

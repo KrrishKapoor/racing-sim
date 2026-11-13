@@ -40,7 +40,7 @@ Track PB, race PB, completed races, and wins persist locally when browser storag
 
 - `src/physics.ts` — fixed-step bicycle steering, acceleration/braking, lateral tire grip, handbrake slip, grass drag, barrier response, and car contacts.
 - `src/track.ts` — a closed Catmull–Rom spline with distance sampling and nearest-segment projection.
-- `src/ai.ts` — difficulty-specific launches, pace, cornering, braking horizons, committed passes, Hard defensive lines, and automatic reverse recovery. All cars share the same physics; there is no rubber banding.
+- `src/ai.ts` — difficulty-specific pace, slip/steering anticipation, inside/outside passing with blocked-lane switching, Hard braking-zone defence, predictive asphalt-edge avoidance, and stopped-traffic reverse recovery. All drivers plan from the same simulation instant. All cars share the same physics; there is no rubber banding or AI position clamping.
 - `src/racing-line.ts` — multiscale constrained lap-time optimization inside the asphalt margins, with curvature/steering limits and a cyclic acceleration/braking speed envelope. The line is a numerical local optimum of that vehicle model, not a guaranteed global optimum. This private route is only used by the AI.
 - `src/setup.ts`, `src/grid.ts` — validated race options and spaced grid slots, with the player starting mid-to-back.
 - `src/lap-trace.ts` — bounded spatial sampling of the player’s actual trajectory, with interpolated finish-line endpoints.
@@ -54,3 +54,18 @@ Track PB, race PB, completed races, and wins persist locally when browser storag
 The HUD was implemented through `delegate_task` using provider `claudeAgent`, model `claude-opus-5-5`, against the shared contract in `src/hud-types.ts`, then integrated and verified with the simulation.
 
 The simulator uses an approachable arcade driving model with speed-dependent steering and tire slip. Forward gears and RPM are automatic telemetry derived from speed; reverse is a real signed drivetrain state. Rendering targets 60 FPS, limits pixel density to 2×, and caps catch-up time after slow frames.
+
+
+## v3 validation
+
+`npm test` covers PB trajectory recording and reload, old time-only records, bounded traces, slower-lap rejection, moving/stopped traffic passes, changing a blocked passing lane, defence, and full-body asphalt clearance after contacts.
+
+Deterministic 120 Hz simulations, same car/engine/tyre model as the player:
+
+| Difficulty | Standing-start lap | Mean of next 3 flying laps |
+| --- | ---: | ---: |
+| Easy | 21.987 s | 20.410 s |
+| Medium | 17.855 s | 16.417 s |
+| Hard | 16.027 s | 14.625 s |
+
+All ten-car fields complete four laps on each difficulty with zero off-asphalt body-corner samples. Hard's maximum body-corner distance from the track centre is 66.51 units against a 75-unit asphalt half-width. The assertions inspect all four body corners every fixed step after collisions, rather than accepting a percentage of off-road time. Congested laps naturally take longer than the solo benchmark; these are measured simulations, not a claim of a globally optimal lap or a guarantee against a player deliberately ramming a rival off-road.

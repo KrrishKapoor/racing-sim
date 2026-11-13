@@ -162,7 +162,7 @@ class Minimap {
     ctx.strokeStyle = "rgba(237, 240, 232, 0.10)";
     ctx.lineWidth = Math.max(4, this.track.width * this.scale);
     ctx.stroke();
-    // Racing line
+    // Circuit outline (the main canvas alone displays the player’s PB ghost).
     trace();
     ctx.strokeStyle = "rgba(237, 240, 232, 0.62)";
     ctx.lineWidth = 1.25;

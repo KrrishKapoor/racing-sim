@@ -266,14 +266,10 @@ function simulate(dt: number): void {
     return;
   }
   if (phase !== "racing") return;
-  stepCar(cars[0], input.read(), track, dt);
-  for (let i = 1; i < cars.length; i++)
-    stepCar(
-      cars[i],
-      getAIInput(cars[i], track, cars, setup.difficulty, dt),
-      track,
-      dt,
-    );
+  // Every driver plans against the same instant, independent of grid order.
+  const inputs = cars.map((car) => car.isPlayer ? input.read() :
+    getAIInput(car, track, cars, setup.difficulty, dt));
+  cars.forEach((car, i) => stepCar(car, inputs[i], track, dt));
   resolveCarCollisions(cars);
   for (const car of cars) constrainToTrack(car, track);
   race.step(cars, dt);

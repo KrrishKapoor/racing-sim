@@ -125,6 +125,9 @@
   position: relative;
 }
 
+.hud-position { display: none; }
+.hud-touch-restart { display: none; }
+
 .hud-timing::before {
   content: "";
   position: absolute;
@@ -441,15 +444,6 @@
   height: 6px;
   border-radius: 50%;
   background: currentColor;
-}
-
-.hud-chip--drift {
-  color: var(--hud-ink);
-  background: var(--hud-lime);
-}
-
-.hud-chip--drift::before {
-  background: var(--hud-ink);
 }
 
 .hud-chip--off {
@@ -1534,7 +1528,7 @@
   white-space: nowrap;
 }
 .hud-lb__list {
-  /* Leave room for the speed cluster (and its DRIFT/OFF TRACK chip) below. */
+  /* Leave room for the speed cluster and its OFF TRACK chip below. */
   max-height: max(78px, min(240px, calc(100cqh - 355px)));
   overflow-y: auto;
   overscroll-behavior: contain;

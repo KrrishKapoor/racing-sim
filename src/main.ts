@@ -9,9 +9,10 @@ import { getAIInput } from "./ai";
 import { DynamicPace } from "./ai-pace";
 import { Race } from "./race";
 import { Renderer } from "./renderer";
-import { InputController } from "./input";
+import { InputController, TOUCH_QUERY } from "./input";
 import { createHUD } from "./hud";
 import type { HudTelemetry } from "./hud-types";
+import "./mobile.css";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
@@ -27,17 +28,18 @@ app.innerHTML = `
       <div class="toolbar"><button id="camera" class="tool-button" title="Switch camera (C)" aria-label="Switch to circuit overview"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7V3h4m6 0h4v4m0 6v4h-4m-6 0H3v-4"/></svg><span>Overview</span></button><button id="pause" class="icon-button" title="Pause (P)" aria-label="Pause race"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4v12M13 4v12"/></svg></button><button id="reset" class="icon-button" title="Reset race (R)" aria-label="Reset race"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a6 6 0 1 1 0 6M4 3v5h5"/></svg></button></div>
     </section>
     <section class="game-stage" aria-label="Racing simulator">
-      <canvas id="race-canvas" aria-label="Top-down racing circuit. Drive with WASD or arrow keys, Space to drift." tabindex="0"></canvas>
+      <canvas id="race-canvas" aria-label="Top-down racing circuit. Steer with A/D or arrow keys, W for gas, S for brake and reverse. On touch screens, drag the left side to steer and use the pedals on the right." tabindex="0"></canvas>
       <div class="stage-topline"><span><i></i> EVERGREEN MOTORSPORT PARK</span><span class="stage-meta"><span id="session-status">GRID READY</span><span class="stage-meta__sep" aria-hidden="true">·</span><span id="fps">60 FPS</span></span></div>
       <div id="hud"></div>
       <div id="go-signal" aria-hidden="true">GO<span>FIND YOUR LINE</span></div>
+      <div class="rotate-prompt"><span aria-hidden="true">↻</span> Rotate your phone for the best drive</div>
+      <button class="touch-pause" aria-label="Pause race">Ⅱ</button>
       <div class="touch-controls" aria-label="Driving controls">
-        <div class="touch-steering"><button data-control="left" aria-label="Steer left">←</button><button data-control="right" aria-label="Steer right">→</button></div>
-        <button data-control="handbrake" class="touch-drift" aria-label="Handbrake drift">DRIFT</button>
+        <div class="touch-stick" aria-hidden="true"><i></i></div>
         <div class="touch-pedals"><button data-control="brake" class="touch-brake" aria-label="Brake or hold to reverse">BRAKE<span class="reverse-pedal-hint">/ R</span></button><button data-control="throttle" class="touch-gas" aria-label="Accelerate">GAS ↑</button></div>
       </div>
     </section>
-    <footer class="race-footer"><div class="keyboard-guide"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span class="or">/</span> <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd><b>DRIVE</b></span><span><kbd class="wide-key">SPACE</kbd><b>DRIFT</b></span><span><kbd>R</kbd><b>RESET</b></span><span><kbd>P</kbd><b>PAUSE</b></span></div><button class="line-toggle" id="racing-line" aria-pressed="true" title="Your fastest lap, traced in dots. Appears after setting a Track PB."><span class="toggle-track"><i></i></span> RACING LINE</button></footer>
+    <footer class="race-footer"><div class="keyboard-guide"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span class="or">/</span> <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd><b>DRIVE</b></span><span><kbd>R</kbd><b>RESET</b></span><span><kbd>P</kbd><b>PAUSE</b></span></div><button class="line-toggle" id="racing-line" aria-pressed="true" title="Your fastest lap, traced in dots. Appears after setting a Track PB."><span class="toggle-track"><i></i></span> RACING LINE</button></footer>
     <div class="bottom-note"><span>PRECISION OVER SPEED.</span><span>BUILT FOR THE NEXT LAP <span class="little-arrow">↗</span></span></div>
   </main>`;
 
@@ -151,10 +153,38 @@ const input = new InputController(stage, {
   camera,
   start,
 });
+const touchDevice = matchMedia(TOUCH_QUERY);
+const viewportMeta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]')!;
+const desktopViewport = viewportMeta.content;
+const viewportEvents = new AbortController();
+function resizeViewport(): void {
+  const viewport = window.visualViewport;
+  const width = viewport?.width ?? innerWidth;
+  const height = viewport?.height ?? innerHeight;
+  if (touchDevice.matches) {
+    stage.style.setProperty("--play-width", `${width}px`);
+    stage.style.setProperty("--play-height", `${height}px`);
+    viewportMeta.content = `${desktopViewport}, maximum-scale=1, user-scalable=no`;
+  } else {
+    stage.style.removeProperty("--play-width");
+    stage.style.removeProperty("--play-height");
+    viewportMeta.content = desktopViewport;
+  }
+  const landscape = touchDevice.matches && width > height;
+  // Toolbar/keyboard height changes must not drop held pedals mid-corner.
+  // Clear only when rotating between layouts; cancellation/blur also clear input.
+  if (renderer.touchLandscape !== landscape) input.clear();
+  renderer.touchLandscape = landscape;
+}
+resizeViewport();
+window.addEventListener("resize", resizeViewport, { signal: viewportEvents.signal });
+window.visualViewport?.addEventListener("resize", resizeViewport, { signal: viewportEvents.signal });
+touchDevice.addEventListener("change", () => { input.clear(); resizeViewport(); }, { signal: viewportEvents.signal });
 document
   .querySelector("#reset")!
   .addEventListener("click", () => reset(phase !== "ready"));
 pauseButton.addEventListener("click", pause);
+document.querySelector(".touch-pause")!.addEventListener("click", pause);
 cameraButton.addEventListener("click", camera);
 document.querySelector("#racing-line")!.addEventListener("click", (event) => {
   showLine = !showLine;
@@ -250,7 +280,6 @@ function telemetry(): HudTelemetry {
         heading: car.heading,
       };
     }),
-    isDrifting: player.isDrifting,
     isOffTrack: player.isOffTrack,
     bestLapIsPersonalBest: personalBest,
     completedLaps: progress.laps,
@@ -349,6 +378,8 @@ if (import.meta.env.DEV)
         driveDirection: car.driveDirection,
         offTrack: car.isOffTrack,
       })),
+      input: input.read(),
+      camera: renderer.cameraState,
       trackLength: track.length,
       skidMarks: renderer.skidMarkCount,
       racingLine: {
@@ -363,4 +394,5 @@ if (import.meta.hot)
     renderer.destroy();
     input.destroy();
     hud.destroy();
+    viewportEvents.abort();
   });

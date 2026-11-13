@@ -248,5 +248,6 @@
     pointer-events: none;
   }
   .rotate-prompt span { font-size: 20px; }
+  .game-stage[data-phase="racing"]:has(.hud-lb.is-expanded) .rotate-prompt { display: none; }
   .game-stage:is([data-phase="ready"], [data-phase="paused"], [data-phase="finished"]) .rotate-prompt { top: calc(var(--safe-top) + 16px); }
 }

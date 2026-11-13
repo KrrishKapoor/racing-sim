@@ -57,7 +57,7 @@ export class PersonalRecords {
         if (saved.raceTimes && typeof saved.raceTimes === "object") {
           for (const [key, time] of Object.entries(saved.raceTimes))
             if (
-              /^(easy|medium|hard):([2-9]|10):([1-9]|10)$/.test(key) &&
+              /^(dynamic|easy|medium|hard):([2-9]|10):([1-9]|10)$/.test(key) &&
               validTime(time)
             )
               this.data.raceTimes[key] = time;
@@ -98,7 +98,8 @@ export class PersonalRecords {
     )
       return false;
     this.data.bestLap = time;
-    this.data.bestLapPath = readLapPath(path);
+    const validPath = readLapPath(path);
+    if (validPath) this.data.bestLapPath = validPath;
     this.save();
     return true;
   }

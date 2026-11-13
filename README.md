@@ -1,6 +1,6 @@
 # APEX — Evergreen GP
 
-A responsive, playable top-down racing simulator built with Vite, TypeScript, and HTML5 Canvas. Start immediately with seven cars, Medium difficulty, and three laps, or open Race setup to choose Easy / Medium / Hard, 2–10 cars, and 1–10 laps. No runtime dependencies or external assets are required.
+A responsive, playable top-down racing simulator built with Vite, TypeScript, and HTML5 Canvas. Start immediately with seven cars, Dynamic AI, and three laps, or open Race setup to choose 2–10 cars and 1–10 laps. The field learns your pace from recent sectors and laps and remembers it for rematches in the same session. No runtime dependencies or external assets are required.
 
 ## Run
 
@@ -34,13 +34,14 @@ Touch devices and narrow screens show steering, gas, brake, and drift buttons. H
 
 All cars stay stationary through the 3–2–1 countdown, then GO releases the grid. Hold S / ↓ (or the touch BRAKE / R pedal) to brake to a stop, then engage reverse after a short neutral dwell. Reverse is capped at 39.6 km/h and steering reverses naturally. Hold W / ↑ to brake out of reverse and return to drive. Low-speed runoff traction and sliding wall contacts allow recovery without resetting.
 
-Track PB, race PB, completed races, and wins persist locally when browser storage is available. Race PBs compare identical difficulty, car count, and lap count; wins are cumulative. Track PB time and trajectory are saved together. Existing time-only records migrate automatically and gain a trace when beaten. Blocked storage falls back to in-memory records. Timing uses ordered sector gates and forward track progress; backing across the start line or teleporting between checkpoints cannot award a lap.
+Track PB, race PB, completed races, and wins persist locally when browser storage is available. Race PBs compare identical Dynamic AI car and lap counts; wins are cumulative. A faster PB updates the time; if that lap has no valid trajectory, the previous complete ghost stays saved. Rejected samples invalidate only the current trace, and recording recovers at the next lap boundary. Legacy difficulty race records remain separate from Dynamic AI race records. Existing time-only records migrate automatically and gain a trace when beaten. Blocked storage falls back to in-memory records. Timing uses ordered sector gates and forward track progress; backing across the start line or teleporting between checkpoints cannot award a lap.
 
 ## Modules
 
 - `src/physics.ts` — fixed-step bicycle steering, acceleration/braking, lateral tire grip, handbrake slip, grass drag, barrier response, and car contacts.
 - `src/track.ts` — a closed Catmull–Rom spline with distance sampling and nearest-segment projection.
-- `src/ai.ts` — difficulty-specific pace, slip/steering anticipation, inside/outside passing with blocked-lane switching, Hard braking-zone defence, predictive asphalt-edge avoidance, and stopped-traffic reverse recovery. All drivers plan from the same simulation instant. All cars share the same physics; there is no rubber banding or AI position clamping.
+- `src/ai.ts` — pace-aware throttle and braking, slip/steering anticipation, inside/outside passing with blocked-lane switching, braking-zone defence, predictive asphalt-edge avoidance, and stopped-traffic reverse recovery. All drivers plan from the same simulation instant and share the same physics.
+- `src/ai-pace.ts` — EWMA player lap/sector estimates that discount opening-lap congestion, time held behind slower traffic and incidents, a calibrated pace response spanning approximately 13–33 s laps, per-car spread, and clamped pressure from unwrapped race gaps. The controller adjusts the target gradually on straights and holds it through corners; it cannot exceed the physical speed envelope. A car five seconds behind pushes toward that ceiling, while leaders ease for slower players. Traffic-delayed samples can improve the estimate but cannot detune the field; clean slower sectors still teach slower pace. Faster cars lapping a beginner are excluded from the blockage filter.
 - `src/racing-line.ts` — multiscale constrained lap-time optimization inside the asphalt margins, with curvature/steering limits and a cyclic acceleration/braking speed envelope. The line is a numerical local optimum of that vehicle model, not a guaranteed global optimum. This private route is only used by the AI.
 - `src/setup.ts`, `src/grid.ts` — validated race options and spaced grid slots, with the player starting mid-to-back.
 - `src/lap-trace.ts` — bounded spatial sampling of the player’s actual trajectory, with interpolated finish-line endpoints.
@@ -56,20 +57,14 @@ The HUD was implemented through `delegate_task` using provider `claudeAgent`, mo
 The simulator uses an approachable arcade driving model with speed-dependent steering and tire slip. Forward gears and RPM are automatic telemetry derived from speed; reverse is a real signed drivetrain state. Rendering targets 60 FPS, limits pixel density to 2×, and caps catch-up time after slow frames.
 
 
-## v3 validation
+## Validation
 
-`npm test` covers PB trajectory recording and reload, old time-only records, bounded traces, slower-lap rejection, moving/stopped traffic passes, changing a blocked passing lane, defence, and full-body asphalt clearance after contacts.
+`npm test` covers ghost rejection/recovery, time-only PB persistence, ordered checkpoints, drivetrain and runoff recovery, dynamic pace smoothing, actual lap matching for 15/18/22 s players, rematch learning, traffic feedback across complete races/rematches, and real lap-time changes, drafting, moving/stopped traffic passes, blocked passing lanes, defence, and full-body asphalt clearance after contacts.
 
-Deterministic 120 Hz simulations, same car/engine/tyre model as the player:
+The deterministic 120 Hz solo benchmark produces a 14.254 s standing-start lap and approximately 12.84 s flying laps with the same engine, brakes, steering and tyres as the player. All four body corners are checked at every step. The four-lap ten-car dynamic field also completes with zero off-asphalt body-corner samples. Congestion naturally changes race pace; the controller cannot guarantee asphalt clearance if a human deliberately rams a rival.
 
-| Difficulty | Standing-start lap | Mean of next 3 flying laps |
-| --- | ---: | ---: |
-| Easy | 21.987 s | 20.410 s |
-| Medium | 17.855 s | 16.417 s |
-| Hard | 16.027 s | 14.625 s |
+The AI planner uses a 32-unit body/tracking margin (43 units of usable half-width), the shared 560-unit maximum speed and 460-unit braking deceleration. Preventing collapsed optimizer segments avoids misleading hairpin shortcuts. Passing lanes use their own curvature limits instead of a blanket speed penalty. A committed pass brakes later, and an aligned straight-line tow reduces aerodynamic drag for both player and AI without changing engine power or maximum speed.
 
-All ten-car fields complete four laps on each difficulty with zero off-asphalt body-corner samples. Hard's maximum body-corner distance from the track centre is 66.51 units against a 75-unit asphalt half-width. The assertions inspect all four body corners every fixed step after collisions, rather than accepting a percentage of off-road time. Congested laps naturally take longer than the solo benchmark; these are measured simulations, not a claim of a globally optimal lap or a guarantee against a player deliberately ramming a rival off-road.
+Independent Claude Opus 5.5 QA passed all 31 unit/simulation tests, the production build, desktop and mobile Chromium checks, Dynamic AI setup, actual lap recording/rendering, and ghost persistence across a new race and reload, with zero console/page errors. Beginner adaptation and repeated-race learning were verified in the live app. Development diagnostics are read-only; no QA autoplay hooks ship in production.
 
-Browser verification used the live Vite app at `http://localhost:5173`, at 1280×800 and 390×844, with zero console errors and no horizontal overflow on mobile. A fresh test session displayed no ghost before Lap 1; its 16.385 s lap saved 695 trajectory points, then a 14.625 s lap replaced them with 677 points. Toggle off/on and reload persistence were verified. The temporary input driver was removed on reload and the test profile’s original records restored. The desktop capture is `racing-sim-v3.png` (2560×1600); screenshots and simulation scratch files remain ignored. All 21 tests and the production build pass.
-
-Additional Hard endurance checks completed ten laps with 2-, 4-, 7-, and 10-car fields. Every car finished; all four body corners stayed within the asphalt at every fixed step (maximum extent 66.52 / 75 units).
+Known limitation: in a slow pack jam, a car recovering at a large angle can briefly put its body corners over the asphalt edge while its centre remains on track. QA observed recovery within about three seconds and classified this as nonblocking. The fast solo and deterministic ten-car benchmarks above check full-body clearance; they do not guarantee it for every traffic recovery.

@@ -1,3 +1,4 @@
+import { MAX_SPEED, BRAKE_DECELERATION, ENGINE_ACCELERATION, WHEELBASE } from "./physics";
 import type { Track, TrackPoint, Vec2 } from "./track";
 
 export interface RacingPoint extends TrackPoint {
@@ -26,7 +27,7 @@ export class RacingLine {
   readonly points: RacingPoint[];
   readonly predictedLapTime: number;
   readonly centerlineLapTime: number;
-  readonly margin = 40;
+  readonly margin = 32;
   private readonly step: number;
   private readonly count = 180;
 
@@ -64,10 +65,10 @@ export class RacingLine {
       });
       const speeds = curvatures.map((k) => {
         const curve = Math.max(0.00001, Math.abs(k));
-        const steerCap = 205 * (0.57 / Math.atan(36 * curve) - 1);
+        const steerCap = 205 * (0.57 / Math.atan(WHEELBASE * curve) - 1);
         return Math.max(
           55,
-          Math.min(535, Math.sqrt(410 / curve), steerCap * 0.94),
+          Math.min(MAX_SPEED, Math.sqrt(850 / curve), steerCap),
         );
       });
       // Repeated circular sweeps propagate braking across the start/finish seam.
@@ -76,14 +77,14 @@ export class RacingLine {
           const next = (i + 1) % this.count;
           speeds[i] = Math.min(
             speeds[i],
-            Math.sqrt(speeds[next] ** 2 + 2 * 390 * lengths[i]),
+            Math.sqrt(speeds[next] ** 2 + 2 * BRAKE_DECELERATION * lengths[i]),
           );
         }
         for (let i = 0; i < this.count; i++) {
           const next = (i + 1) % this.count;
           const acceleration = Math.max(
             28,
-            255 * (1 - speeds[i] / 728) - 13 - speeds[i] * 0.028,
+            ENGINE_ACCELERATION * (1 - speeds[i] / (MAX_SPEED * 1.3)) - 13 - speeds[i] * 0.028,
           );
           speeds[next] = Math.min(
             speeds[next],
@@ -97,7 +98,7 @@ export class RacingLine {
         curvatures,
         // Avoid collapsed/reversed segments at the tight hairpin. Those can
         // falsely improve the numerical score while creating an undriveable cusp.
-        time: lengths.some((length) => length < this.step * 0.45) ? Infinity : lengths.reduce(
+        time: lengths.some((length) => length < this.step * 0.8) ? Infinity : lengths.reduce(
           (sum, length, i) =>
             sum + (2 * length) / (speeds[i] + speeds[(i + 1) % this.count]),
           0,

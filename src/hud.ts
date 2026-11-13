@@ -1,6 +1,6 @@
 import "./hud.css";
 import { DEFAULT_SETUP } from "./setup";
-import type { Difficulty, RaceSetup } from "./setup";
+import type { RaceSetup } from "./setup";
 import type {
   HudActions,
   HudController,
@@ -459,14 +459,6 @@ export function createHUD(
   const setupDescription = el("span", "hud-mono");
   setupSummary.append(el("span", "", "Race setup"), setupDescription);
   const setupFields = el("div", "hud-setup__fields");
-  const difficultySelect = el("select");
-  difficultySelect.id = `${uid}-difficulty`;
-  difficultySelect.setAttribute("aria-label", "Difficulty");
-  for (const value of ["easy", "medium", "hard"]) {
-    const option = el("option", "", value[0].toUpperCase() + value.slice(1));
-    option.value = value;
-    difficultySelect.append(option);
-  }
   const carsInput = el("input");
   carsInput.type = "range";
   carsInput.min = "2";
@@ -484,7 +476,6 @@ export function createHUD(
   lapsInput.id = `${uid}-laps`;
   lapsInput.setAttribute("aria-label", "Race laps");
   for (const [title, field, output] of [
-    ["Difficulty", difficultySelect],
     ["Cars", carsInput, carsValue],
     ["Laps", lapsInput],
   ] as const) {
@@ -501,12 +492,10 @@ export function createHUD(
   const setupChanged = () => {
     if (phase !== "ready") return;
     actions.onSetupChange({
-      difficulty: difficultySelect.value as Difficulty,
       cars: Number(carsInput.value),
       laps: Number(lapsInput.value),
     });
   };
-  difficultySelect.addEventListener("change", setupChanged);
   carsInput.addEventListener("input", setupChanged);
   lapsInput.addEventListener("change", setupChanged);
   {
@@ -685,7 +674,7 @@ export function createHUD(
       timingRecords,
       `Race PB ${formatTime(s.records.bestRace)} · ${s.records.wins} ${s.records.wins === 1 ? "win" : "wins"}`,
     );
-    timingRecords.title = `Race PB for ${s.setup.laps} laps, ${s.setup.cars} cars, ${s.setup.difficulty} difficulty`;
+    timingRecords.title = `Race PB for ${s.setup.laps} laps, ${s.setup.cars} cars, Dynamic AI`;
     const pb = s.bestLap != null && s.bestLapIsPersonalBest;
     if (pbBadge.hidden === pb) pbBadge.hidden = !pb;
 
@@ -934,31 +923,24 @@ export function createHUD(
     setText(strip.values[0], formatTime(s.records.bestLap));
     setText(strip.values[1], formatTime(s.records.bestRace));
     setText(strip.values[2], String(s.records.wins));
-    strip.element.title = `Saved on this device. Race PB compares ${s.setup.laps} ${s.setup.laps === 1 ? "lap" : "laps"}, ${s.setup.cars} cars, ${s.setup.difficulty} difficulty. Wins are across all setups.`;
+    strip.element.title = `Saved on this device. Race PB compares ${s.setup.laps} ${s.setup.laps === 1 ? "lap" : "laps"}, ${s.setup.cars} cars, Dynamic AI. Wins are across all setups.`;
   }
   function updateReady(s: HudTelemetry): void {
-    const difficulty =
-      s.setup.difficulty[0].toUpperCase() + s.setup.difficulty.slice(1);
     setText(
       readyCopy,
       "Brake late, carry speed through the apex and chase a clean lap.",
     );
     setText(
       setupDescription,
-      `${difficulty} · ${s.setup.cars} cars · ${s.setup.laps} ${s.setup.laps === 1 ? "lap" : "laps"}`,
+      `Dynamic AI · ${s.setup.cars} cars · ${s.setup.laps} ${s.setup.laps === 1 ? "lap" : "laps"}`,
     );
-    difficultySelect.value = s.setup.difficulty;
     carsInput.value = String(s.setup.cars);
     carsValue.value = String(s.setup.cars);
     if (document.activeElement !== lapsInput)
       lapsInput.value = String(s.setup.laps);
     setText(
       setupHint,
-      {
-        easy: "Relaxed starts, early braking, room to pass.",
-        medium: "Competitive pace and committed overtakes.",
-        hard: "Fast exits, late braking, and defensive lines.",
-      }[s.setup.difficulty],
+      "Dynamic AI learns your pace, finds a tow and fights for position.",
     );
     updateRecords(readyRecords, s);
   }

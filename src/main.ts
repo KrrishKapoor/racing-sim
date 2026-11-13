@@ -1,11 +1,12 @@
 import "./style.css";
 import { Track, clamp } from "./track";
-import { constrainToTrack, resolveCarCollisions, stepCar } from "./physics";
+import { constrainToTrack, resolveCarCollisions, slipstream, stepCar } from "./physics";
 import { createGrid } from "./grid";
 import { DEFAULT_SETUP, normalizeSetup } from "./setup";
 import type { RaceSetup } from "./setup";
 import { PersonalRecords, browserRecordStorage } from "./records";
 import { getAIInput } from "./ai";
+import { DynamicPace } from "./ai-pace";
 import { Race } from "./race";
 import { Renderer } from "./renderer";
 import { InputController } from "./input";
@@ -52,6 +53,7 @@ const pauseButton = document.querySelector<HTMLButtonElement>("#pause")!;
 let setup: RaceSetup = { ...DEFAULT_SETUP };
 let cars = createGrid(track, setup);
 let race = new Race(track, cars, setup.laps);
+const dynamicPace = new DynamicPace(race);
 const records = new PersonalRecords(browserRecordStorage());
 let phase: HudTelemetry["phase"] = "ready";
 let resumePhase: "countdown" | "racing" = "racing";
@@ -73,6 +75,7 @@ function changeSetup(next: RaceSetup): void {
   setup = normalizeSetup(next);
   cars = createGrid(track, setup);
   race = new Race(track, cars, setup.laps);
+  dynamicPace.resetRace();
   hud.update(telemetry());
   syncShell();
 }
@@ -82,6 +85,7 @@ function focusTrack() {
 function reset(start = true): void {
   cars = createGrid(track, setup);
   race = new Race(track, cars, setup.laps);
+  dynamicPace.resetRace();
   phase = start ? "countdown" : "ready";
   countdown = 3;
   lapCount = 0;
@@ -267,18 +271,21 @@ function simulate(dt: number): void {
   }
   if (phase !== "racing") return;
   // Every driver plans against the same instant, independent of grid order.
+  const paceTargets = dynamicPace.targets(race);
+  const tows = cars.map((car) => slipstream(car, cars, track));
   const inputs = cars.map((car) => car.isPlayer ? input.read() :
-    getAIInput(car, track, cars, setup.difficulty, dt));
-  cars.forEach((car, i) => stepCar(car, inputs[i], track, dt));
+    getAIInput(car, track, cars, paceTargets.get(car.id), dt));
+  cars.forEach((car, i) => stepCar(car, inputs[i], track, dt, tows[i]));
   resolveCarCollisions(cars);
   for (const car of cars) constrainToTrack(car, track);
   race.step(cars, dt);
+  dynamicPace.observe(race);
   renderer.recordSkids(cars, dt);
   const playerProgress = race.drivers.get("player")!;
   if (playerProgress.laps.length > lapCount) {
     lapCount = playerProgress.laps.length;
     const lap = playerProgress.laps.at(-1)!;
-    const improved = records.recordLap(lap, race.playerLapPath);
+    const improved = records.recordLap(lap, race.playerLapValid ? race.playerLapPath : null);
     personalBest ||= improved;
   }
   if (playerProgress.finishTime !== null) {

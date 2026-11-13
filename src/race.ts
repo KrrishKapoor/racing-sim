@@ -22,11 +22,14 @@ export class Race {
   time = 0;
   readonly drivers = new Map<string, DriverProgress>();
   playerLapPath: LapPath | null = null;
+  /** Whether the most recently timed lap has a complete, trustworthy trace. */
+  playerLapValid = false;
+  private playerTraceValid = true;
   private playerTrace: LapTrace | null = null;
   private previousPlayer: Vec2 | null = null;
   constructor(
     readonly track: Track,
-    cars: Car[],
+    readonly cars: readonly Car[],
     totalLaps = 3,
   ) {
     this.totalLaps = Math.max(1, Math.min(10, Math.round(totalLaps)));
@@ -68,8 +71,9 @@ export class Race {
           this.track.width / 2 + this.track.runoff
       ) {
         if (car.isPlayer) {
-          this.playerTrace = null;
-          this.playerLapPath = null;
+          // Retain the completed ghost; discard only this lap’s partial trace.
+          this.playerTrace = new LapTrace(car);
+          this.playerTraceValid = false;
         }
         continue;
       }
@@ -83,7 +87,11 @@ export class Race {
             x: previousPlayer.x + (car.x - previousPlayer.x) * fraction,
             y: previousPlayer.y + (car.y - previousPlayer.y) * fraction,
           };
-          this.playerLapPath = this.playerTrace.finish(crossing);
+          const completed = this.playerTrace.finish(crossing);
+          this.playerLapValid = this.playerTraceValid;
+          if (this.playerLapValid) this.playerLapPath = completed;
+          // finish() seeds the next lap at the exact crossing, even after rejection.
+          this.playerTraceValid = true;
         }
         this.playerTrace.sample(car);
       }

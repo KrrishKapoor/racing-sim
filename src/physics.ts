@@ -39,6 +39,8 @@ export interface Car {
   projection: TrackProjection;
 }
 export const MAX_SPEED = 560;
+export const BRAKE_DECELERATION = 460;
+export const ENGINE_ACCELERATION = 255;
 export const MAX_REVERSE_SPEED = 110;
 export const WHEELBASE = 36;
 export const steeringAngle = (speed: number) =>
@@ -77,12 +79,30 @@ export function createCar(
   };
 }
 
+/** Aerodynamic tow, available to every car using the same physical rules.
+ * Only aligned cars on a straight qualify; neither engine power nor MAX_SPEED changes. */
+export function slipstream(car: Car, cars: Car[], track: Track): number {
+  if (car.isOffTrack || car.speed < 180 ||
+      Math.abs(wrapAngle(track.pointAt(car.projection.distance + 160).heading - car.projection.heading)) > 0.16)
+    return 0;
+  let tow = 0;
+  for (const other of cars) {
+    if (other === car || other.isOffTrack || other.speed < 180) continue;
+    const gap = (other.projection.distance - car.projection.distance + track.length) % track.length;
+    const lateral = Math.abs(other.projection.offset - car.projection.offset);
+    if (gap > 40 && gap < 280 && lateral < 36 && Math.abs(wrapAngle(other.heading - car.heading)) < 0.2)
+      tow = Math.max(tow, (1 - (gap - 40) / 240) * (1 - lateral / 36));
+  }
+  return tow;
+}
+
 /** Fixed-step bicycle steering with independently damped longitudinal/lateral velocity. */
 export function stepCar(
   car: Car,
   input: DrivingInput,
   track: Track,
   dt: number,
+  tow = 0,
 ): void {
   const projection = track.project(car);
   car.isOffTrack = projection.distanceFromCenter > track.width / 2 + 3;
@@ -105,7 +125,7 @@ export function stepCar(
     s = Math.sin(car.heading);
   forward = car.vx * c + car.vy * s;
   lateral = -car.vx * s + car.vy * c;
-  const acceleration = car.isOffTrack ? 170 : 255;
+  const acceleration = car.isOffTrack ? 170 : ENGINE_ACCELERATION;
   const reverseRequested =
     input.brake > 0.1 &&
     input.throttle < 0.1 &&
@@ -138,10 +158,10 @@ export function stepCar(
         dt;
   }
   const deceleration =
-    braking * 460 +
+    braking * BRAKE_DECELERATION +
     (input.handbrake ? 140 : 0) +
     13 +
-    Math.abs(forward) * 0.028;
+    Math.abs(forward) * 0.028 * (1 - 0.75 * clamp(tow, 0, 1));
   forward =
     Math.sign(forward) * Math.max(0, Math.abs(forward) - deceleration * dt);
   // Preserve low-speed traction in runoff so a stopped car can climb back out.

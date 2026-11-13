@@ -1,0 +1,1591 @@
+/* ==========================================================================
+   Telemetry HUD — motorsport broadcast styling
+   ========================================================================== */
+
+.hud {
+  --hud-ink: #101412;
+  --hud-white: #edf0e8;
+  --hud-sage: #8e9b90;
+  --hud-lime: #d5f55b;
+  --hud-warn: #ff8a6b;
+  --hud-panel: rgba(16, 20, 18, 0.74);
+  --hud-panel-solid: rgba(16, 20, 18, 0.94);
+  --hud-line: rgba(237, 240, 232, 0.12);
+  --hud-line-strong: rgba(237, 240, 232, 0.22);
+  --hud-dim: rgba(237, 240, 232, 0.08);
+  --hud-mono:
+    ui-monospace, "SF Mono", "SFMono-Regular", "JetBrains Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
+  --hud-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --hud-edge: 24px;
+  --hud-speed-bottom: 28px;
+  --hud-radius: 3px;
+
+  position: absolute;
+  inset: 0;
+  container-type: size;
+  container-name: hud;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--hud-white);
+  font-family: var(--hud-sans);
+  font-size: 12px;
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 2;
+}
+
+.hud *,
+.hud *::before,
+.hud *::after {
+  box-sizing: border-box;
+}
+
+.hud [hidden] {
+  display: none !important;
+}
+
+.hud-mono {
+  font-family: var(--hud-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.hud-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hud-sage);
+}
+
+.hud-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hud-panel {
+  background: var(--hud-panel);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+}
+
+.hud-fade {
+  transition:
+    opacity 220ms ease,
+    visibility 220ms ease,
+    transform 220ms ease;
+}
+
+.hud-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 15px;
+  padding: 0 4px;
+  margin-left: 6px;
+  border-radius: 2px;
+  background: var(--hud-lime);
+  color: var(--hud-ink);
+  font-family: var(--hud-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+}
+
+/* --------------------------------------------------------------------------
+   Top-left column: timing + standings
+   -------------------------------------------------------------------------- */
+
+.hud-tl {
+  position: absolute;
+  top: var(--hud-edge);
+  left: var(--hud-edge);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 248px;
+}
+
+.hud-timing {
+  padding: 10px 12px 12px;
+  position: relative;
+}
+
+.hud-timing::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: 28px;
+  height: 2px;
+  background: var(--hud-lime);
+}
+
+.hud-timing__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hud-timing__lap,
+.hud-timing__best {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.hud-timing__lapval {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hud-white);
+}
+
+.hud-timing__best .hud-mono {
+  font-size: 12px;
+  color: var(--hud-white);
+}
+
+.hud-timing__main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.hud-timing__time {
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.05;
+  color: var(--hud-white);
+}
+
+.hud-delta {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+}
+
+.hud-delta.is-faster {
+  color: var(--hud-lime);
+}
+
+.hud-delta.is-slower {
+  color: var(--hud-warn);
+}
+
+.hud-sectors {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.hud-sector {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 6px 5px;
+  border: 1px solid var(--hud-line);
+  border-radius: 2px;
+  background: rgba(237, 240, 232, 0.02);
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.hud-sector::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: -1px;
+  height: 2px;
+  background: var(--hud-dim);
+  transition: background-color 200ms ease;
+}
+
+.hud-sector__label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--hud-sage);
+}
+
+.hud-sector__value {
+  font-size: 12px;
+  color: rgba(237, 240, 232, 0.45);
+}
+
+.hud-sector.is-done::before {
+  background: var(--hud-lime);
+}
+
+.hud-sector.is-done .hud-sector__value {
+  color: var(--hud-white);
+}
+
+.hud-sector.is-current {
+  border-color: var(--hud-line-strong);
+  background: rgba(237, 240, 232, 0.05);
+}
+
+.hud-sector.is-current::before {
+  background: var(--hud-white);
+  animation: hud-sector-pulse 1.4s ease-in-out infinite;
+}
+
+.hud-sector.is-current .hud-sector__label {
+  color: var(--hud-white);
+}
+
+@keyframes hud-sector-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Standings */
+
+.hud-lb {
+  padding: 8px 0 6px;
+}
+
+.hud-lb__head,
+.hud-lb__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px 6px;
+}
+
+.hud-lb__toggle {
+  display: none;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  text-align: left;
+  border-radius: 2px;
+}
+
+.hud-lb__toggle:focus-visible {
+  outline: 2px solid var(--hud-lime);
+  outline-offset: -2px;
+}
+
+.hud-lb__pos {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hud-white);
+}
+
+.hud-lb__chev {
+  width: 7px;
+  height: 7px;
+  margin-left: 2px;
+  border-right: 1.5px solid var(--hud-sage);
+  border-bottom: 1.5px solid var(--hud-sage);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.hud-lb.is-expanded .hud-lb__chev {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+.hud-lb__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hud-lb__row {
+  display: grid;
+  grid-template-columns: 18px 3px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 12px;
+  border-top: 1px solid rgba(237, 240, 232, 0.05);
+  position: relative;
+}
+
+.hud-lb__row.is-player {
+  background: linear-gradient(
+    90deg,
+    rgba(213, 245, 91, 0.14),
+    rgba(213, 245, 91, 0.02)
+  );
+}
+
+/* In a scrolling field the player's row pins to whichever edge it would
+   leave from, so your own position is always on screen. */
+.hud-lb__list .hud-lb__row.is-player {
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(213, 245, 91, 0.14), rgba(213, 245, 91, 0.02)),
+    rgba(20, 26, 22, 0.97);
+}
+
+.hud-lb__row.is-player::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--hud-lime);
+}
+
+.hud-lb__rpos {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hud-sage);
+}
+
+.hud-lb__row.is-player .hud-lb__rpos {
+  color: var(--hud-lime);
+}
+
+.hud-lb__swatch {
+  width: 3px;
+  height: 14px;
+  border-radius: 1px;
+}
+
+.hud-lb__name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud-lb__gap {
+  font-size: 11px;
+  color: var(--hud-sage);
+}
+
+.hud-lb__row.is-player .hud-lb__gap {
+  color: var(--hud-white);
+}
+
+/* --------------------------------------------------------------------------
+   Bottom-left: speed cluster
+   -------------------------------------------------------------------------- */
+
+.hud-speed {
+  position: absolute;
+  left: var(--hud-edge);
+  bottom: var(--hud-speed-bottom);
+  width: 264px;
+  padding: 0;
+}
+
+.hud-flags {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 2px;
+  font-family: var(--hud-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  animation: hud-chip-in 160ms ease-out;
+}
+
+.hud-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hud-chip--drift {
+  color: var(--hud-ink);
+  background: var(--hud-lime);
+}
+
+.hud-chip--drift::before {
+  background: var(--hud-ink);
+}
+
+.hud-chip--off {
+  color: var(--hud-warn);
+  background: rgba(16, 20, 18, 0.86);
+  border: 1px solid var(--hud-warn);
+}
+
+.hud-chip--off::before {
+  animation: hud-blink 0.7s steps(2, start) infinite;
+}
+
+@keyframes hud-chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes hud-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+.hud-speed__main {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hud-speed__read {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-shadow: 0 1px 12px rgba(16, 20, 18, 0.6);
+}
+
+.hud-speed__num {
+  font-size: 64px;
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.hud-speed__unit {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hud-sage);
+}
+
+.hud-gear {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 56px;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius);
+  background: var(--hud-panel);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.hud-gear__label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hud-sage);
+}
+
+.hud-gear__num {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--hud-lime);
+}
+
+/* Reverse reads as a state change, not just another gear number. */
+.hud-gear.is-reverse {
+  border-color: rgba(255, 138, 107, 0.6);
+  background: rgba(58, 26, 18, 0.82);
+}
+.hud-gear.is-reverse .hud-gear__num {
+  color: var(--hud-warn);
+}
+
+.hud-rpm {
+  display: grid;
+  grid-template-columns: repeat(18, 1fr);
+  gap: 2px;
+  margin-top: 10px;
+  height: 8px;
+}
+
+.hud-rpm__seg {
+  border-radius: 1px;
+  background: rgba(237, 240, 232, 0.1);
+  transition: background-color 60ms linear;
+}
+
+.hud-rpm__seg.is-on {
+  background: var(--hud-white);
+}
+
+.hud-rpm__seg.is-high.is-on {
+  background: var(--hud-lime);
+}
+
+.hud-rpm__seg.is-red {
+  background: rgba(255, 138, 107, 0.16);
+}
+
+.hud-rpm__seg.is-red.is-on {
+  background: var(--hud-warn);
+}
+
+.hud-rpm.is-limiter .hud-rpm__seg.is-on {
+  animation: hud-limiter 0.18s steps(2, start) infinite;
+}
+
+@keyframes hud-limiter {
+  to {
+    opacity: 0.35;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Bottom-right: minimap
+   -------------------------------------------------------------------------- */
+
+.hud-map {
+  position: absolute;
+  right: var(--hud-edge);
+  bottom: var(--hud-edge);
+  width: 232px;
+  padding: 8px 8px 6px;
+}
+
+.hud-map__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 4px 2px;
+}
+
+.hud-map__sector {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hud-lime);
+}
+
+.hud-map__canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+}
+
+/* --------------------------------------------------------------------------
+   Countdown
+   -------------------------------------------------------------------------- */
+
+.hud-countdown {
+  position: absolute;
+  left: 50%;
+  top: 24%; /* above the grid, which sits at stage centre */
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 200ms ease,
+    visibility 200ms ease;
+}
+
+.hud-countdown.is-open {
+  opacity: 1;
+  visibility: visible;
+  /* Let the ready card clear before "3" lands so the two never stack. */
+  transition-delay: 150ms;
+}
+
+/* Hand off to the GO banner instantly — no fading "1" behind it. */
+.hud-countdown:not(.is-open) {
+  transition: none;
+}
+
+.hud-countdown__num {
+  font-size: 128px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--hud-white);
+  text-shadow: 0 4px 40px rgba(16, 20, 18, 0.7);
+}
+
+.hud-countdown__num.is-go {
+  color: var(--hud-lime);
+}
+
+.hud-countdown__num.is-tick {
+  animation: hud-tick 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hud-countdown__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hud-sage);
+  padding: 4px 10px;
+  background: var(--hud-panel);
+  border: 1px solid var(--hud-line);
+  border-radius: 2px;
+}
+
+@keyframes hud-tick {
+  from {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Overlays & cards
+   -------------------------------------------------------------------------- */
+
+.hud-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(16, 20, 18, 0.45) 0%,
+    rgba(16, 20, 18, 0.78) 100%
+  );
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 260ms ease,
+    visibility 260ms ease;
+}
+
+.hud-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.hud-overlay:not(.is-open) {
+  transition-duration: 150ms;
+}
+
+.hud-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 30px 32px 26px;
+  background: var(--hud-panel-solid);
+  border: 1px solid var(--hud-line);
+  border-radius: 4px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  transform: translateY(8px);
+  transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hud-overlay.is-open .hud-card {
+  transform: none;
+}
+
+.hud-card::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: 56px;
+  height: 2px;
+  background: var(--hud-lime);
+}
+
+.hud-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-family: var(--hud-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hud-lime);
+}
+
+.hud-eyebrow__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hud-lime);
+  box-shadow: 0 0 0 3px rgba(213, 245, 91, 0.18);
+  animation: hud-sector-pulse 1.8s ease-in-out infinite;
+}
+
+.hud-eyebrow__dot--still {
+  animation: none;
+}
+
+.hud-title {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--hud-white);
+}
+
+.hud-title--sm {
+  font-size: 24px;
+}
+
+.hud-copy {
+  margin: 12px 0 0;
+  max-width: 34ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--hud-sage);
+}
+
+.hud-card__actions {
+  margin-top: 22px;
+  display: flex;
+}
+
+.hud-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 168px;
+  height: 44px;
+  padding: 0 16px 0 18px;
+  border: 0;
+  border-radius: var(--hud-radius);
+  background: var(--hud-lime);
+  color: var(--hud-ink);
+  font-family: var(--hud-sans);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.hud-cta:hover {
+  background: #e2ff76;
+}
+
+.hud-cta:active {
+  transform: translateY(1px);
+}
+
+.hud-cta:focus-visible {
+  outline: 2px solid var(--hud-white);
+  outline-offset: 3px;
+}
+
+.hud-cta__arrow {
+  font-family: var(--hud-mono);
+  font-size: 15px;
+  transition: transform 160ms ease;
+}
+
+.hud-cta:hover .hud-cta__arrow {
+  transform: translateX(3px);
+}
+
+/* Keyboard hints */
+
+.hud-keys {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--hud-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.hud-keys__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-keys__caps {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.hud-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  width: auto;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--hud-line-strong);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  font-family: var(--hud-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--hud-white);
+  background: rgba(237, 240, 232, 0.04);
+}
+
+.hud-keys__label {
+  font-size: 11px;
+  color: var(--hud-sage);
+}
+
+.hud-touch-hint {
+  display: none;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--hud-line);
+  font-size: 12px;
+  color: var(--hud-sage);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .hud-keys {
+    display: none;
+  }
+  .hud-touch-hint {
+    display: block;
+  }
+}
+
+/* Stats */
+
+.hud-stats {
+  display: grid;
+  gap: 1px;
+  margin: 20px 0 0;
+  background: var(--hud-line);
+  border: 1px solid var(--hud-line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.hud-stats--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.hud-stats--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.hud-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--hud-ink);
+  min-width: 0;
+}
+
+.hud-stat dt {
+  margin: 0;
+}
+
+.hud-stat__value {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--hud-white);
+  white-space: nowrap;
+}
+
+.hud-stat__value .hud-mono {
+  font-size: 17px;
+}
+
+.hud-stat__value--accent .hud-mono {
+  color: var(--hud-lime);
+}
+
+/* Finish */
+
+.hud-overlay--finished .hud-card {
+  max-width: 460px;
+}
+
+.hud-finish__head {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.hud-finish__poswrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-right: 20px;
+  border-right: 1px solid var(--hud-line);
+}
+
+.hud-finish__pos {
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  color: var(--hud-white);
+}
+
+.hud-finish__pos.is-win {
+  color: var(--hud-lime);
+}
+
+.hud-finish__of {
+  margin-top: 4px;
+  font-family: var(--hud-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hud-sage);
+}
+
+.hud-finish__text .hud-eyebrow {
+  margin-bottom: 8px;
+}
+
+.hud-laps__head {
+  margin: 20px 0 8px;
+}
+
+.hud-laps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hud-laps__row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto 60px;
+  align-items: center;
+  gap: 12px;
+  height: 30px;
+  border-top: 1px solid rgba(237, 240, 232, 0.06);
+}
+
+.hud-laps__row:last-child {
+  border-bottom: 1px solid rgba(237, 240, 232, 0.06);
+}
+
+.hud-laps__bar {
+  height: 3px;
+  background: rgba(237, 240, 232, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.hud-laps__fill {
+  display: block;
+  height: 100%;
+  background: rgba(237, 240, 232, 0.4);
+}
+
+.hud-laps__t {
+  font-size: 13px;
+  color: var(--hud-white);
+}
+
+.hud-laps__d {
+  font-size: 11px;
+  text-align: right;
+  color: var(--hud-sage);
+}
+
+.hud-laps__row.is-best .hud-laps__n,
+.hud-laps__row.is-best .hud-laps__t,
+.hud-laps__row.is-best .hud-laps__d {
+  color: var(--hud-lime);
+}
+
+.hud-laps__row.is-best .hud-laps__fill {
+  background: var(--hud-lime);
+}
+
+.hud-laps__empty {
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--hud-sage);
+}
+
+/* --------------------------------------------------------------------------
+   Phase visibility — keep overlays and telemetry from competing
+   -------------------------------------------------------------------------- */
+
+.hud[data-phase="ready"] .hud-tl,
+.hud[data-phase="ready"] .hud-speed,
+.hud[data-phase="ready"] .hud-map,
+.hud[data-phase="finished"] .hud-tl,
+.hud[data-phase="finished"] .hud-speed,
+.hud[data-phase="finished"] .hud-map,
+.hud[data-phase="paused"] .hud-lb,
+.hud[data-phase="paused"] .hud-speed,
+.hud[data-phase="paused"] .hud-map {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hud[data-phase="paused"] .hud-sectors,
+.hud[data-phase="paused"] .hud-delta {
+  display: none;
+}
+
+.hud[data-phase="paused"] .hud-tl {
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   Compact layouts (phones, narrow stages)
+   -------------------------------------------------------------------------- */
+
+@container hud (max-width: 960px) {
+  .hud-tl {
+    width: 224px;
+  }
+  .hud-speed__num {
+    font-size: 56px;
+  }
+  .hud-map {
+    width: 200px;
+  }
+  .hud-map__canvas {
+    height: 124px;
+  }
+}
+
+@container hud (max-width: 700px) {
+  /* A container query cannot restyle the container itself, so the layout
+     variables are overridden on the positioned children instead. */
+  .hud-tl,
+  .hud-speed,
+  .hud-map {
+    --hud-edge: 12px;
+    --hud-speed-bottom: 116px;
+  }
+
+  .hud-tl {
+    width: min(208px, calc(100cqw - 24px - 112px - 8px));
+    gap: 6px;
+  }
+
+  .hud-timing {
+    padding: 8px 10px 9px;
+  }
+
+  .hud-timing__time {
+    font-size: 22px;
+  }
+
+  .hud-timing__main {
+    margin: 2px 0 7px;
+  }
+
+  .hud-timing__best .hud-label {
+    display: none;
+  }
+
+  .hud-timing__best .hud-mono {
+    font-size: 11px;
+    color: var(--hud-sage);
+  }
+
+  .hud-delta {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .hud-sector {
+    padding: 4px 5px 3px;
+  }
+
+  .hud-sector__value {
+    font-size: 10px;
+  }
+
+  /* Standings collapse to the player's row behind a toggle */
+  .hud-lb {
+    padding: 0 0 2px;
+  }
+  .hud-lb__head {
+    display: none;
+  }
+  .hud-lb__toggle {
+    display: flex;
+    min-height: 32px;
+    padding: 0 10px;
+  }
+  .hud-lb:not(.is-expanded) .hud-lb__row:not(.is-player) {
+    display: none;
+  }
+  .hud-lb:not(.is-expanded) .hud-lb__toggle .hud-lb__pos {
+    display: none;
+  }
+  .hud-lb__row {
+    height: 24px;
+    padding: 0 10px;
+  }
+
+  /* Minimap moves to the top-right corner */
+  .hud-map {
+    top: var(--hud-edge);
+    bottom: auto;
+    width: 112px;
+    padding: 5px 5px 4px;
+  }
+  .hud-map__head {
+    padding: 0 2px 1px;
+  }
+  .hud-map__head .hud-label {
+    font-size: 8px;
+  }
+  .hud-map__sector {
+    font-size: 10px;
+  }
+  .hud-map__canvas {
+    height: 84px;
+  }
+
+  .hud-speed {
+    width: 216px;
+  }
+  .hud-speed__num {
+    font-size: 48px;
+  }
+  .hud-gear {
+    width: 44px;
+    height: 48px;
+  }
+  .hud-gear__num {
+    font-size: 24px;
+  }
+  .hud-rpm {
+    margin-top: 8px;
+    height: 6px;
+  }
+
+  /* Compact: anchor the countdown in the gap between the timing panel and
+     the grid, and hide the one-row standings while it shows. */
+  .hud-countdown {
+    top: 32%;
+  }
+  .hud-countdown__num {
+    font-size: 80px;
+  }
+  .hud[data-phase="countdown"] .hud-lb {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .hud-card {
+    padding: 24px 20px 20px;
+  }
+  .hud-title {
+    font-size: 28px;
+  }
+  .hud-title--sm {
+    font-size: 21px;
+  }
+  .hud-copy {
+    font-size: 13px;
+  }
+  .hud-cta {
+    width: 100%;
+  }
+  .hud-finish__pos {
+    font-size: 52px;
+  }
+  .hud-finish__head {
+    gap: 16px;
+  }
+  .hud-finish__poswrap {
+    padding-right: 16px;
+  }
+  .hud-laps__row {
+    grid-template-columns: 44px 1fr auto 52px;
+    gap: 8px;
+  }
+  .hud-stats--3 .hud-stat {
+    padding: 8px 9px;
+  }
+  .hud-stats--3 .hud-stat__value,
+  .hud-stats--3 .hud-stat__value .hud-mono {
+    font-size: 14px;
+  }
+}
+
+/* Very narrow: drop the minimap rather than crowd the timing panel */
+@container hud (max-width: 340px) {
+  .hud-map {
+    display: none;
+  }
+  .hud-tl {
+    width: calc(100cqw - 24px);
+  }
+}
+
+/* Short stages (landscape phones): trim secondary info */
+@container hud (max-height: 420px) {
+  .hud-lb,
+  .hud-sectors {
+    display: none;
+  }
+  .hud-countdown {
+    top: 26%;
+  }
+  .hud-countdown__num {
+    font-size: 80px;
+  }
+  .hud-card {
+    padding: 20px 22px 18px;
+  }
+  .hud-copy {
+    margin-top: 8px;
+  }
+  .hud-card__actions,
+  .hud-keys {
+    margin-top: 14px;
+  }
+}
+
+@container hud (max-height: 420px) {
+  .hud-map {
+    display: none;
+  }
+  .hud-keys,
+  .hud-touch-hint {
+    display: none;
+  }
+}
+
+/* Touch devices: the app's touch controls own the bottom 96px of the stage. */
+@media (hover: none) and (pointer: coarse) {
+  .hud-speed {
+    --hud-speed-bottom: 116px;
+  }
+  .hud-map {
+    top: var(--hud-edge);
+    bottom: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud *,
+  .hud *::before,
+  .hud *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Race setup and personal records share the existing restrained telemetry style. */
+.hud-card--ready {
+  max-width: 480px;
+  padding: 22px 26px;
+}
+.hud-card--ready .hud-copy {
+  max-width: none;
+  font-size: 12px;
+  margin-top: 9px;
+}
+.hud-card--ready .hud-eyebrow {
+  margin-bottom: 10px;
+}
+.hud-card--ready .hud-card__actions {
+  margin-top: 16px;
+}
+.hud-card--ready .hud-keys {
+  margin-top: 16px;
+  padding-top: 12px;
+  gap: 7px 14px;
+}
+.hud-records {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.45fr;
+  gap: 12px;
+  margin: 17px 0 0;
+  padding: 12px 0;
+  border-block: 1px solid var(--hud-line);
+}
+.hud-records dt {
+  font-size: 9px;
+  letter-spacing: 0.09em;
+}
+.hud-records dd {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--hud-white);
+}
+.hud-records > div:first-child dd {
+  color: var(--hud-lime);
+}
+.hud-record-notice {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 3px 8px;
+  color: var(--hud-lime);
+  background: rgba(213, 245, 91, 0.12);
+  border: 1px solid rgba(213, 245, 91, 0.45);
+  border-radius: 2px;
+  font: 600 10px/1.4 var(--hud-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+/* A freshly beaten record gets a lime underline tick and brighter value. */
+.hud-records > div {
+  position: relative;
+}
+.hud-records > div.is-new dd {
+  color: var(--hud-lime);
+  font-weight: 600;
+}
+.hud-records > div.is-new dt::after {
+  content: " NEW";
+  color: var(--hud-lime);
+}
+.hud-overlay--finished .hud-card {
+  padding: 20px 28px 20px;
+}
+.hud-overlay--finished .hud-records {
+  margin-top: 12px;
+  padding: 8px 0;
+}
+.hud-overlay--finished .hud-laps__row {
+  height: 24px;
+}
+/* Three laps visible; longer races scroll the list, never the CTA. */
+.hud-overlay--finished .hud-laps {
+  max-height: 73px;
+}
+.hud-setup {
+  margin-top: 12px;
+  border: 1px solid var(--hud-line);
+  border-radius: 3px;
+  pointer-events: auto;
+}
+.hud-setup summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  font-size: 11px;
+  color: var(--hud-white);
+  cursor: pointer;
+  list-style: none;
+}
+.hud-setup summary::-webkit-details-marker {
+  display: none;
+}
+.hud-setup summary > span:first-child::before {
+  content: "+";
+  color: var(--hud-lime);
+  margin-right: 8px;
+}
+.hud-setup[open] summary > span:first-child::before {
+  content: "−";
+}
+.hud-setup summary .hud-mono {
+  font-size: 9px;
+  color: var(--hud-sage);
+}
+.hud-setup__fields {
+  padding: 2px 12px 12px;
+}
+.hud-setup__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.hud-setup__row label {
+  min-width: 75px;
+  font-size: 9px;
+}
+.hud-setup__row input,
+.hud-setup__row select {
+  min-width: 0;
+  width: 100%;
+  accent-color: var(--hud-lime);
+  font: 12px var(--hud-mono);
+  color: var(--hud-white);
+}
+.hud-setup__row select,
+.hud-setup__row input[type="number"] {
+  height: 30px;
+  padding: 0 8px;
+  background: #20291f;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 3px;
+}
+.hud-setup__row output {
+  min-width: 2ch;
+  color: var(--hud-lime);
+  text-align: right;
+}
+.hud-setup__hint {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--hud-sage);
+  margin: 8px 0 0;
+}
+.hud-setup__row input[type="number"] {
+  width: 76px;
+  flex: none;
+}
+.hud-setup__row select {
+  width: auto;
+  flex: 1;
+}
+/* While the setup is open, drop the intro copy and key hints so the
+   Start button stays inside the card instead of scrolling away. */
+.hud-card--ready:has(.hud-setup[open]) .hud-copy,
+.hud-card--ready:has(.hud-setup[open]) .hud-keys,
+.hud-card--ready:has(.hud-setup[open]) .hud-touch-hint {
+  display: none;
+}
+.hud-setup input:focus-visible,
+.hud-setup select:focus-visible,
+.hud-setup summary:focus-visible {
+  outline: 2px solid var(--hud-lime);
+  outline-offset: 3px;
+}
+.hud-secondary {
+  background: transparent;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 3px;
+  color: var(--hud-white);
+  padding: 0 15px;
+  min-height: 44px;
+  cursor: pointer;
+  pointer-events: auto;
+  font: 12px var(--hud-sans);
+}
+.hud-card__actions {
+  gap: 10px;
+}
+.hud-timing__records {
+  font-size: 9px;
+  color: var(--hud-sage);
+  padding-top: 8px;
+  white-space: nowrap;
+}
+.hud-lb__list {
+  /* Leave room for the speed cluster (and its DRIFT/OFF TRACK chip) below. */
+  max-height: max(78px, min(240px, calc(100cqh - 355px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #506249 transparent;
+  pointer-events: auto;
+}
+.hud-laps {
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+@container hud (max-width: 700px) {
+  .hud-card--ready {
+    padding: 20px 18px;
+  }
+  .hud-records {
+    gap: 7px;
+  }
+  .hud-records dd {
+    font-size: 12px;
+  }
+  .hud-timing__records {
+    font-size: 8px;
+  }
+  .hud-timing__best .hud-label {
+    display: inline;
+    font-size: 8px;
+  }
+  .hud-timing__best {
+    gap: 4px;
+  }
+  .hud-timing__best .hud-badge {
+    position: absolute;
+    top: -8px;
+    right: 5px;
+  }
+  .hud-setup summary {
+    padding: 10px;
+  }
+  .hud-setup summary .hud-mono {
+    font-size: 8px;
+  }
+  .hud-lb__list {
+    max-height: 168px;
+  }
+  .hud-card__actions .hud-cta {
+    flex: 1;
+    min-width: 0;
+  }
+  .hud-card--ready .hud-keys {
+    font-size: 10px;
+  }
+}

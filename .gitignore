@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+artifacts/
+*.log
+
+# temporary screenshot artifacts
+racing-sim-*.png
+/*.png

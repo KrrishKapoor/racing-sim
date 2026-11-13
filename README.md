@@ -24,13 +24,12 @@ npm run preview  # Serve the production bundle
 | Accelerate                    | W / ↑                      |
 | Brake                         | S / ↓                      |
 | Steer                         | A, D / ←, →                |
-| Handbrake / drift             | Space                      |
 | Reset race to the grid        | R                          |
 | Pause / resume                | P / Escape                 |
 | Follow car / circuit overview | C                          |
 | Start race                    | Enter or Start race button |
 
-Touch devices and narrow screens show steering, gas, brake, and drift buttons. Hold buttons to drive; simultaneous pointers are supported. The toolbar offers camera, pause, and reset controls. The Racing Line toggle shows a thin dotted trace of your actual fastest lap. There is no line until a PB trajectory exists; no suggested braking or acceleration colours are displayed. Switching tabs or losing window focus pauses the race.
+Touch devices use a floating analog stick: touch anywhere on the left and drag to steer. The right thumb can slide between large gas and brake pads without lifting. Both thumbs work simultaneously. Landscape fills the viewport with a closer chase camera, compact timing, a minimap, and expandable standings. Portrait remains playable with a rotation hint. Desktop retains the toolbar for camera, pause, and reset. The Racing Line toggle shows a thin dotted trace of your actual fastest lap. There is no line until a PB trajectory exists; no suggested braking or acceleration colours are displayed. Switching tabs or losing window focus pauses the race.
 
 All cars stay stationary through the 3–2–1 countdown, then GO releases the grid. Hold S / ↓ (or the touch BRAKE / R pedal) to brake to a stop, then engage reverse after a short neutral dwell. Reverse is capped at 39.6 km/h and steering reverses naturally. Hold W / ↑ to brake out of reverse and return to drive. Low-speed runoff traction and sliding wall contacts allow recovery without resetting.
 
@@ -38,7 +37,7 @@ Track PB, race PB, completed races, and wins persist locally when browser storag
 
 ## Modules
 
-- `src/physics.ts` — fixed-step bicycle steering, acceleration/braking, lateral tire grip, handbrake slip, grass drag, barrier response, and car contacts.
+- `src/physics.ts` — fixed-step bicycle steering, acceleration/braking, lateral tire grip, grass drag, barrier response, and car contacts.
 - `src/track.ts` — a closed Catmull–Rom spline with distance sampling and nearest-segment projection.
 - `src/ai.ts` — pace-aware throttle and braking, slip/steering anticipation, inside/outside passing with blocked-lane switching, braking-zone defence, predictive asphalt-edge avoidance, and stopped-traffic reverse recovery. All drivers plan from the same simulation instant and share the same physics.
 - `src/ai-pace.ts` — EWMA player lap/sector estimates that discount opening-lap congestion, time held behind slower traffic and incidents, a calibrated pace response spanning approximately 13–33 s laps, per-car spread, and clamped pressure from unwrapped race gaps. The controller adjusts the target gradually on straights and holds it through corners; it cannot exceed the physical speed envelope. A car five seconds behind pushes toward that ceiling, while leaders ease for slower players. Traffic-delayed samples can improve the estimate but cannot detune the field; clean slower sectors still teach slower pace. Faster cars lapping a beginner are excluded from the blockage filter.

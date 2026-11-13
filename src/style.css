@@ -415,58 +415,9 @@ kbd {
   font-size: 13px;
   margin-left: 8px;
 }
-.touch-controls {
-  display: none;
-  position: absolute;
-  bottom: 28px;
-  left: 16px;
-  right: 16px;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 8px;
-  pointer-events: none;
-}
-.touch-controls > div {
-  display: flex;
-  gap: 7px;
-}
-.touch-controls button {
-  pointer-events: auto;
-  user-select: none;
-  touch-action: none;
-  background: #14271edd;
-  color: #dfe9d5;
-  border: 1px solid #75886c66;
-  border-radius: 10px;
-  min-width: 52px;
-  height: 62px;
-  font-size: 25px;
-  box-shadow: 0 3px 14px #08180a33;
-  backdrop-filter: blur(10px);
-}
-.touch-controls .touch-drift {
-  min-width: 56px;
-  height: 52px;
-  font: 9px monospace;
-  letter-spacing: 0.5px;
-}
-.touch-pedals button {
-  font: bold 10px monospace;
-  min-width: 54px;
-}
-.touch-pedals .touch-gas {
-  height: 74px;
-  background: #d5f55be8;
-  color: #1b2812;
-}
-.touch-controls button.pressed {
-  background: #d5f55b;
-  color: #15240f;
-  transform: translateY(2px);
-}
-.game-stage[data-phase="ready"] .touch-controls,
-.game-stage[data-phase="finished"] .touch-controls,
-.game-stage[data-phase="paused"] .touch-controls {
+.touch-controls,
+.touch-pause,
+.rotate-prompt {
   display: none;
 }
 @media (min-width: 1600px) {
@@ -505,17 +456,6 @@ kbd {
   }
   .toolbar {
     margin-left: 0;
-  }
-}
-@media (pointer: coarse) {
-  .touch-controls {
-    display: flex;
-  }
-  .keyboard-guide {
-    visibility: hidden;
-  }
-  .game-stage {
-    min-height: 600px;
   }
 }
 @media (max-width: 700px) {
@@ -632,14 +572,6 @@ kbd {
     letter-spacing: 0.7px;
     padding: 16px 3px;
   }
-  .touch-controls {
-    display: flex;
-  }
-  .game-stage[data-phase="ready"] .touch-controls,
-  .game-stage[data-phase="finished"] .touch-controls,
-  .game-stage[data-phase="paused"] .touch-controls {
-    display: none;
-  }
 }
 @media (max-width: 390px) {
   .race-heading {
@@ -657,16 +589,6 @@ kbd {
   .tool-button,
   .icon-button {
     width: 29px;
-  }
-  .touch-controls {
-    left: 10px;
-    right: 10px;
-  }
-  .touch-controls button {
-    min-width: 46px;
-  }
-  .touch-pedals button {
-    min-width: 48px;
   }
   .session {
     font-size: 7px;

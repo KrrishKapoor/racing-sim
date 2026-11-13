@@ -311,7 +311,8 @@ export function createHUD(
     sectorCells.push({ cell, value });
   }
   const timingRecords = el("div", "hud-timing__records hud-mono");
-  timing.append(tRow, lapTimeRow, sectors, timingRecords);
+  const position = el("span", "hud-position hud-mono");
+  timing.append(tRow, lapTimeRow, sectors, timingRecords, position);
 
   /* ---------- left: leaderboard ---------- */
   const lb = el("section", "hud-panel hud-lb hud-fade");
@@ -357,11 +358,9 @@ export function createHUD(
   const speed = el("section", "hud-speed hud-fade");
   speed.setAttribute("aria-label", "Speed, gear and engine");
   const flags = el("div", "hud-flags");
-  const driftChip = el("span", "hud-chip hud-chip--drift", "Drift");
   const offChip = el("span", "hud-chip hud-chip--off", "Off track");
-  driftChip.hidden = true;
   offChip.hidden = true;
-  flags.append(driftChip, offChip);
+  flags.append(offChip);
 
   const speedMain = el("div", "hud-speed__main");
   const speedNum = el("span", "hud-mono hud-speed__num", "0");
@@ -515,7 +514,6 @@ export function createHUD(
       [["W", "↑"], "Throttle"],
       [["S", "↓"], "Brake / reverse"],
       [["A", "D"], "Steer"],
-      [["Space"], "Handbrake"],
       [["P"], "Pause"],
       [["R"], "Reset"],
     ];
@@ -529,7 +527,7 @@ export function createHUD(
     const touchHint = el(
       "p",
       "hud-touch-hint",
-      "Use the on-screen controls. Hold BRAKE / R to stop, then reverse.",
+      "Drag anywhere on the left to steer. Slide between GAS and BRAKE on the right. Hold BRAKE to stop, then reverse.",
     );
     const actionsRow = el("div", "hud-card__actions");
     actionsRow.append(cta);
@@ -702,6 +700,7 @@ export function createHUD(
     const drivers = [...s.drivers].sort((a, b) => a.position - b.position);
     const total = drivers.length;
     const posText = `P${s.position}/${total}`;
+    setText(position, posText);
     setText(lbPos, posText);
     setText(lbTogglePos, posText);
 
@@ -756,9 +755,7 @@ export function createHUD(
     }
     setClass(rpmBar, "is-limiter", rpm >= 0.97);
     const showOff = s.isOffTrack;
-    const showDrift = s.isDrifting && !s.isOffTrack;
     if (offChip.hidden === showOff) offChip.hidden = !showOff;
-    if (driftChip.hidden === showDrift) driftChip.hidden = !showDrift;
   }
 
   let lastCount = "";
@@ -1004,7 +1001,6 @@ export function createHUD(
     sectorDelta: null,
     position: 1,
     drivers: [],
-    isDrifting: false,
     isOffTrack: false,
     bestLapIsPersonalBest: false,
     completedLaps: [],

@@ -5,7 +5,6 @@ export interface DrivingInput {
   throttle: number;
   brake: number;
   steer: number;
-  handbrake: boolean;
   /** AI recovery must request reverse explicitly; ordinary AI braking cannot shift. */
   reverse?: boolean;
 }
@@ -13,7 +12,6 @@ export const NO_INPUT: DrivingInput = {
   throttle: 0,
   brake: 0,
   steer: 0,
-  handbrake: false,
 };
 export interface Car {
   id: string;
@@ -32,7 +30,7 @@ export interface Car {
   steering: number;
   driveDirection: 1 | -1;
   shiftTimer: number;
-  isDrifting: boolean;
+  isSliding: boolean;
   isOffTrack: boolean;
   braking: boolean;
   impact: number;
@@ -71,7 +69,7 @@ export function createCar(
     steering: 0,
     driveDirection: 1,
     shiftTimer: 0,
-    isDrifting: false,
+    isSliding: false,
     isOffTrack: false,
     braking: false,
     impact: 0,
@@ -112,11 +110,9 @@ export function stepCar(
   let lateral = -car.vx * sine + car.vy * cosine;
   car.steering +=
     (clamp(input.steer, -1, 1) - car.steering) * (1 - Math.exp(-12 * dt));
-  const drift = input.handbrake && Math.abs(forward) > 55;
   const targetYaw =
     (forward / WHEELBASE) *
-    Math.tan(car.steering * steeringAngle(forward)) *
-    (drift ? 1.35 : 1);
+    Math.tan(car.steering * steeringAngle(forward));
   car.yawRate += (targetYaw - car.yawRate) * (1 - Math.exp(-8 * dt));
   car.heading = wrapAngle(car.heading + car.yawRate * dt);
 
@@ -159,7 +155,6 @@ export function stepCar(
   }
   const deceleration =
     braking * BRAKE_DECELERATION +
-    (input.handbrake ? 140 : 0) +
     13 +
     Math.abs(forward) * 0.028 * (1 - 0.75 * clamp(tow, 0, 1));
   forward =
@@ -168,7 +163,7 @@ export function stepCar(
   if (car.isOffTrack)
     forward *= Math.exp(-1.35 * clamp(Math.abs(forward) / 140, 0.25, 1) * dt);
   forward = clamp(forward, -MAX_REVERSE_SPEED, MAX_SPEED);
-  lateral *= Math.exp(-(drift ? 1.65 : car.isOffTrack ? 3.8 : 10.5) * dt);
+  lateral *= Math.exp(-(car.isOffTrack ? 3.8 : 10.5) * dt);
   car.vx = c * forward - s * lateral;
   car.vy = s * forward + c * lateral;
   car.x += car.vx * dt;
@@ -178,11 +173,11 @@ export function stepCar(
   car.speed = Math.hypot(car.vx, car.vy);
   car.forwardSpeed = car.vx * c + car.vy * s;
   car.lateralSpeed = -car.vx * s + car.vy * c;
-  car.isDrifting =
+  car.isSliding =
     !car.isOffTrack &&
     car.speed > 65 &&
-    (drift || Math.abs(car.lateralSpeed) > 48);
-  car.braking = braking > 0.1 || input.handbrake;
+    Math.abs(car.lateralSpeed) > 48;
+  car.braking = braking > 0.1;
   car.projection = track.project(car);
 }
 

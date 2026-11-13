@@ -24,6 +24,10 @@ export class Renderer {
   private ghostSource: LapPath | null = null;
   private ghostPath: Path2D | null = null;
   overview = false;
+  touchLandscape = false;
+  get cameraState() {
+    return { ...this.camera, width: this.width, height: this.height, touchLandscape: this.touchLandscape };
+  }
   get skidMarkCount(): number {
     return this.skids.length;
   }
@@ -255,7 +259,7 @@ export class Renderer {
         y: car.y - s * 14 + c * side,
       }));
       const previous = this.previousTires.get(car.id);
-      if (previous && car.isDrifting && !car.isOffTrack)
+      if (previous && car.isSliding && !car.isOffTrack)
         tires.forEach((p, i) => {
           if (Math.hypot(p.x - previous[i].x, p.y - previous[i].y) < 25)
             this.skids.push({
@@ -280,20 +284,22 @@ export class Renderer {
       this.width / (b.maxX - b.minX + 140),
       this.height / (b.maxY - b.minY + 100),
     );
-    const overview = this.overview || phase === "ready" || phase === "finished";
+    const overview = !this.touchLandscape && (this.overview || phase === "ready" || phase === "finished");
     const targetZoom = overview
       ? fit
-      : Math.min(
+      : this.touchLandscape
+        ? Math.max(0.7, Math.min(1.15, this.height / 440, this.width / 700))
+        : Math.min(
           this.width / (this.width < 700 ? 620 : 950),
           this.height / 780,
         );
     const tx = overview
       ? (b.minX + b.maxX) / 2
-      : player.x + Math.cos(player.heading) * 100;
+      : player.x + (this.touchLandscape ? player.vx * 0.22 : Math.cos(player.heading) * 100);
     const ty = overview
       ? (b.minY + b.maxY) / 2
-      : player.y + Math.sin(player.heading) * 100;
-    const smoothing = 1 - Math.exp(-4 * Math.min(dt, 0.1));
+      : player.y + (this.touchLandscape ? player.vy * 0.22 : Math.sin(player.heading) * 100);
+    const smoothing = 1 - Math.exp(-(this.touchLandscape ? 10 : 4) * Math.min(dt, 0.1));
     this.camera.x += (tx - this.camera.x) * smoothing;
     this.camera.y += (ty - this.camera.y) * smoothing;
     this.camera.zoom += (targetZoom - this.camera.zoom) * smoothing;

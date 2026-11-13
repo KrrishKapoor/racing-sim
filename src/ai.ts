@@ -78,7 +78,7 @@ export function getAIInput(
     const error = wrapAngle(Math.atan2(target.y - car.y, target.x - car.x) - car.heading - Math.PI);
     const backing = roomBehind && state.reverseFor > 0;
     return { throttle: backing ? 0 : 1, brake: backing ? 1 : 0, reverse: true,
-      steer: -clamp(Math.atan(2 * Math.sin(error) * WHEELBASE / 75) / steeringAngle(car.speed), -1, 1), handbrake: false };
+      steer: -clamp(Math.atan(2 * Math.sin(error) * WHEELBASE / 75) / steeringAngle(car.speed), -1, 1) };
   }
   const alongside = traffic.filter((t) => Math.abs(t.gap) < 58);
   let leader = traffic.find((t) => t.gap > 0 && t.gap < overtakeDistance);
@@ -243,6 +243,5 @@ export function getAIInput(
     throttle: car.speed < desired ? (straight ? Math.min(1, state.pace) : 1) : 0,
     brake: clamp((car.speed - desired) / 35, 0, 1),
     steer,
-    handbrake: false,
   };
 }

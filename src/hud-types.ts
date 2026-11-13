@@ -33,7 +33,6 @@ export interface HudTelemetry {
   sectorDelta: number | null;
   position: number;
   drivers: HudDriver[];
-  isDrifting: boolean;
   isOffTrack: boolean;
   bestLapIsPersonalBest: boolean;
   completedLaps: number[];

@@ -451,17 +451,8 @@ test("record migration, malformed storage and unavailable storage are safe", () 
   assert.equal(blocked.summary(DEFAULT_SETUP).wins, 1);
 });
 
-test("handbrake produces lateral slip; grass reduces acceleration", () => {
+test("grass reduces acceleration", () => {
   const track = new Track();
-  const normal = createCar(track, "player", "You", "#fff", 0);
-  const drift = createCar(track, "player", "You", "#fff", 0);
-  normal.vx = drift.vx = 280;
-  for (let i = 0; i < 30; i++) {
-    stepCar(normal, { ...NO_INPUT, steer: 0.7 }, track, dt);
-    stepCar(drift, { ...NO_INPUT, steer: 0.7, handbrake: true }, track, dt);
-  }
-  assert.ok(Math.abs(drift.lateralSpeed) > Math.abs(normal.lateralSpeed) * 1.5);
-  assert.equal(drift.isDrifting, true);
   const road = createCar(track, "player", "You", "#fff", 0);
   const grass = createCar(track, "player", "You", "#fff", 0);
   Object.assign(road, track.pointAt(50));

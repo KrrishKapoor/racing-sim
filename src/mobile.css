@@ -1,0 +1,240 @@
+/* Touch is a separate layout; a narrow desktop window keeps keyboard controls. */
+@media (hover: none) and (pointer: coarse) {
+  html, body {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .topbar, .race-heading, .race-footer, .bottom-note, .stage-topline { display: none; }
+  .shell { padding: 0; }
+  .game-stage {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    position: fixed;
+    inset: 0 auto auto 0;
+    width: var(--play-width, 100vw);
+    height: 100svh;
+    height: var(--play-height, 100dvh);
+    min-height: 0;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  .game-stage, .game-stage * {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Menus can scroll internally; the page and active driving surface cannot. */
+  .game-stage:is([data-phase="ready"], [data-phase="paused"], [data-phase="finished"]) { touch-action: pan-y; }
+  #hud { inset: 0; }
+  .hud { --hud-edge: 12px; }
+  .hud-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .hud-tl { inset: 0; width: auto; display: block; }
+  .hud-timing {
+    position: absolute;
+    top: var(--safe-top);
+    left: var(--safe-left);
+    right: var(--safe-right);
+    height: 54px;
+    padding: 0 68px 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 24px;
+    border: 0;
+    border-bottom: 1px solid #ffffff1c;
+    border-radius: 0;
+    background: #101412dc;
+  }
+  .hud-timing::before, .hud-sectors, .hud-timing__records, .hud-badge { display: none; }
+  .hud-timing__row { display: contents; }
+  .hud-timing__lap { order: 0; }
+  .hud-timing__main { order: 1; margin: 0; gap: 12px; }
+  .hud-timing__best { order: 2; }
+  .hud-timing__time { font-size: 20px; }
+  .hud-timing__lapval, .hud-timing__best .hud-mono { font-size: 16px; }
+  .hud-label { font-size: 11px; letter-spacing: 0.07em; color: #b9c4b9; }
+  .hud-delta { font-size: 14px; }
+  .hud-position { display: block; order: 3; margin-left: auto; font-size: 17px; color: var(--lime); }
+  .hud-lb {
+    display: block;
+    position: absolute;
+    top: calc(var(--safe-top) + 64px);
+    left: calc(var(--safe-left) + 14px);
+    width: 168px;
+    padding: 0;
+    border-radius: 22px;
+  }
+  .hud-lb__head, .hud-lb:not(.is-expanded) .hud-lb__list { display: none; }
+  .hud-lb__toggle { display: flex; min-height: 44px; padding: 0 13px; }
+  .hud-lb:not(.is-expanded) .hud-lb__toggle .hud-lb__pos { display: block; }
+  /* Expanded standings stay in the middle third, clear of both thumb zones. */
+  .hud-lb.is-expanded {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(230px, 32%);
+    border-radius: 12px;
+    background: #101412f5;
+  }
+  .hud-lb.is-expanded .hud-lb__list {
+    display: block;
+    max-height: calc(100cqh - var(--safe-top) - var(--safe-bottom) - 196px);
+    margin: 0;
+    padding-bottom: 6px;
+  }
+  .hud-lb__row { height: 24px; padding: 0 10px; }
+  .hud-map {
+    display: block;
+    top: calc(var(--safe-top) + 64px);
+    right: calc(var(--safe-right) + 14px);
+    bottom: auto;
+    width: 120px;
+    padding: 4px;
+    background: #101412b8;
+  }
+  .hud-map__head { display: none; }
+  .hud-map__canvas { height: 76px; }
+  .hud-speed {
+    left: 50%;
+    bottom: calc(var(--safe-bottom) + 18px);
+    width: 156px;
+    transform: translateX(-50%);
+    padding: 7px 10px;
+    border-radius: 9px;
+    background: #101412d9;
+  }
+  .hud-speed__main { gap: 12px; align-items: center; justify-content: center; }
+  .hud-speed__num { font-size: 30px; }
+  .hud-speed__unit { font-size: 10px; margin: 0; }
+  .hud-gear { width: 30px; height: 36px; flex: none; border: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .hud-gear__label, .hud-rpm { display: none; }
+  .hud-gear__num { font-size: 22px; }
+  .hud-flags { left: 50%; transform: translateX(-50%); white-space: nowrap; }
+  .hud-countdown { top: 40%; }
+  .hud-countdown__num { font-size: 64px; }
+  #go-signal { top: 40%; font-size: 64px; }
+  .touch-pause {
+    display: block;
+    position: absolute;
+    z-index: 4;
+    top: calc(var(--safe-top) + 5px);
+    right: calc(var(--safe-right) + 12px);
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ffffff25;
+    border-radius: 50%;
+    background: #101412cc;
+    color: #e9ede5;
+    font-size: 20px;
+    touch-action: none;
+  }
+  .touch-controls { display: block; position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .touch-stick {
+    position: absolute;
+    width: 112px;
+    height: 112px;
+    margin: -56px 0 0 -56px;
+    border: 1px solid #ffffff66;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 180ms ease-out;
+  }
+  .touch-stick.active { opacity: 0.48; transition-duration: 60ms; }
+  .touch-stick i {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px;
+    border: 1px solid #ffffffb3;
+    border-radius: 50%;
+    background: #ffffff24;
+  }
+  .touch-pedals {
+    position: absolute;
+    right: calc(var(--safe-right) + 26px);
+    bottom: calc(var(--safe-bottom) + 26px);
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .touch-pedals button {
+    width: 78px;
+    height: 78px;
+    padding: 0;
+    pointer-events: auto;
+    touch-action: none;
+    border: 1px solid #dce6d878;
+    border-radius: 24px;
+    background: #14271ed9;
+    color: #edf0e8;
+    font: bold 14px Arial, sans-serif;
+  }
+  .touch-pedals .touch-gas {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 20px;
+    background: #d5f55bd9;
+    color: #1b2812;
+  }
+  .touch-pedals button.pressed { background: #f1ffb5; color: #15240f; border-color: white; }
+  .reverse-pedal-hint { font-size: 11px; }
+  .game-stage:is([data-phase="ready"], [data-phase="paused"], [data-phase="finished"]) :is(.touch-controls, .touch-pause) { display: none; }
+  .hud-overlay { padding: calc(var(--safe-top) + 12px) calc(var(--safe-right) + 12px) calc(var(--safe-bottom) + 12px) calc(var(--safe-left) + 12px); }
+  .hud-card { overscroll-behavior: none; touch-action: pan-y; }
+  .hud-touch-hint { display: block; font-size: 12px; line-height: 1.5; }
+  .hud-keys { display: none; }
+  .hud-setup__row input { font-size: 16px; }
+}
+
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+  .hud-card--ready { max-width: 520px; padding: 14px 20px; }
+  .hud-card--ready .hud-eyebrow, .hud-card--ready .hud-copy { display: none; }
+  .hud-title { font-size: 26px; }
+  .hud-records { margin-top: 10px; padding: 8px 0; }
+  .hud-card--ready .hud-card__actions { margin-top: 10px; }
+  .hud-touch-hint { margin: 10px 0 0; }
+}
+
+@media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  .hud-timing { height: 88px; gap: 8px 16px; flex-wrap: wrap; align-content: center; }
+  .hud-timing__time { font-size: 18px; }
+  .hud-timing__best .hud-label { font-size: 11px; }
+  .hud-timing__best { order: 4; }
+  .hud-position { margin-left: 0; }
+  .hud-lb, .hud-map { top: calc(var(--safe-top) + 100px); }
+  .hud-lb.is-expanded { width: 200px; }
+  .hud-speed { bottom: calc(var(--safe-bottom) + 158px); }
+  .touch-pedals { right: calc(var(--safe-right) + 18px); gap: 8px; }
+  .touch-pedals .touch-gas { width: 88px; height: 96px; }
+  .touch-pedals button { width: 72px; }
+  .rotate-prompt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    top: calc(var(--safe-top) + 196px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    padding: 8px 12px;
+    border-radius: 18px;
+    background: #101412c9;
+    color: #dce6d8;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  .rotate-prompt span { font-size: 20px; }
+  .game-stage:is([data-phase="ready"], [data-phase="paused"], [data-phase="finished"]) .rotate-prompt { top: calc(var(--safe-top) + 16px); }
+}

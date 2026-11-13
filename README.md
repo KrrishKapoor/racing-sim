@@ -69,3 +69,7 @@ Deterministic 120 Hz simulations, same car/engine/tyre model as the player:
 | Hard | 16.027 s | 14.625 s |
 
 All ten-car fields complete four laps on each difficulty with zero off-asphalt body-corner samples. Hard's maximum body-corner distance from the track centre is 66.51 units against a 75-unit asphalt half-width. The assertions inspect all four body corners every fixed step after collisions, rather than accepting a percentage of off-road time. Congested laps naturally take longer than the solo benchmark; these are measured simulations, not a claim of a globally optimal lap or a guarantee against a player deliberately ramming a rival off-road.
+
+Browser verification used the live Vite app at `http://localhost:5173`, at 1280×800 and 390×844, with zero console errors and no horizontal overflow on mobile. A fresh test session displayed no ghost before Lap 1; its 16.385 s lap saved 695 trajectory points, then a 14.625 s lap replaced them with 677 points. Toggle off/on and reload persistence were verified. The temporary input driver was removed on reload and the test profile’s original records restored. The desktop capture is `racing-sim-v3.png` (2560×1600); screenshots and simulation scratch files remain ignored. All 21 tests and the production build pass.
+
+Additional Hard endurance checks completed ten laps with 2-, 4-, 7-, and 10-car fields. Every car finished; all four body corners stayed within the asphalt at every fixed step (maximum extent 66.52 / 75 units).

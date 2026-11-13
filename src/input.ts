@@ -46,6 +46,8 @@ export class InputController {
     window.addEventListener("keydown", (event) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (target?.matches("input, textarea, select, summary")) return;
+      // Space has no driving action; retain the game's scroll suppression.
+      if (event.code === "Space" && !target?.closest("button")) event.preventDefault();
       if (DRIVE_KEYS.includes(event.code)) {
         event.preventDefault();
         this.keys.add(event.code);
@@ -83,7 +85,7 @@ export class InputController {
       const target = event.target as Element;
       if (target.closest("button, input, select, summary, .hud-lb__list") && !target.closest("[data-control]")) return;
       const rect = root.getBoundingClientRect();
-      if (event.clientX < rect.left + rect.width / 2) {
+      if (event.clientX < rect.left + rect.width / 2 && !target.closest("[data-control]")) {
         if (this.stick) return;
         this.stick = { id: event.pointerId, x: event.clientX, y: event.clientY };
         this.steer = 0;

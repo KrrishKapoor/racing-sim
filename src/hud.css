@@ -126,6 +126,7 @@
 }
 
 .hud-position { display: none; }
+.hud-touch-restart { display: none; }
 
 .hud-timing::before {
   content: "";

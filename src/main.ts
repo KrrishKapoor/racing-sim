@@ -170,13 +170,16 @@ function resizeViewport(): void {
     stage.style.removeProperty("--play-height");
     viewportMeta.content = desktopViewport;
   }
-  renderer.touchLandscape = touchDevice.matches && width > height;
-  if (touchDevice.matches) input.clear();
+  const landscape = touchDevice.matches && width > height;
+  // Toolbar/keyboard height changes must not drop held pedals mid-corner.
+  // Clear only when rotating between layouts; cancellation/blur also clear input.
+  if (renderer.touchLandscape !== landscape) input.clear();
+  renderer.touchLandscape = landscape;
 }
 resizeViewport();
 window.addEventListener("resize", resizeViewport, { signal: viewportEvents.signal });
 window.visualViewport?.addEventListener("resize", resizeViewport, { signal: viewportEvents.signal });
-touchDevice.addEventListener("change", resizeViewport, { signal: viewportEvents.signal });
+touchDevice.addEventListener("change", () => { input.clear(); resizeViewport(); }, { signal: viewportEvents.signal });
 document
   .querySelector("#reset")!
   .addEventListener("click", () => reset(phase !== "ready"));

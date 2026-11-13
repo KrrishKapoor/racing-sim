@@ -573,7 +573,10 @@ export function createHUD(
     stat("Lap", pauseLap);
     stat("Race time", pauseTime);
     const actionsRow = el("div", "hud-card__actions");
-    actionsRow.append(pauseCta);
+    const restart = el("button", "hud-secondary hud-touch-restart", "Restart race");
+    restart.type = "button";
+    restart.addEventListener("click", () => { if (phase === "paused") actions.onRestart(); });
+    actionsRow.append(pauseCta, restart);
     paused.card.append(eyebrow, title, stats, actionsRow);
   }
 

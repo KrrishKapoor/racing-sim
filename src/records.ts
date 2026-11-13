@@ -1,5 +1,7 @@
 import { raceKey } from "./setup";
 import type { RaceSetup } from "./setup";
+import { readLapPath } from "./lap-trace";
+import type { LapPath } from "./lap-trace";
 
 export const RECORDS_KEY = "apex-evergreen-records-v2";
 export const LEGACY_LAP_KEY = "apex-evergreen-best-v1";
@@ -14,8 +16,9 @@ export interface RecordSummary {
   races: number;
 }
 interface SavedRecords {
-  version: 2;
+  version: 3;
   bestLap: number | null;
+  bestLapPath: LapPath | null;
   raceTimes: Record<string, number>;
   wins: number;
   races: number;
@@ -30,8 +33,9 @@ const count = (value: unknown) =>
 /** Storage failure never interrupts a race; records remain available in memory. */
 export class PersonalRecords {
   private data: SavedRecords = {
-    version: 2,
+    version: 3,
     bestLap: null,
+    bestLapPath: null,
     raceTimes: {},
     wins: 0,
     races: 0,
@@ -43,10 +47,11 @@ export class PersonalRecords {
         raw &&
         typeof raw === "object" &&
         "version" in raw &&
-        raw.version === 2
+        (raw.version === 2 || raw.version === 3)
       ) {
         const saved = raw as Partial<SavedRecords>;
         this.data.bestLap = validTime(saved.bestLap) ? saved.bestLap : null;
+        this.data.bestLapPath = this.data.bestLap === null ? null : readLapPath(saved.bestLapPath);
         this.data.wins = count(saved.wins);
         this.data.races = Math.max(count(saved.races), this.data.wins);
         if (saved.raceTimes && typeof saved.raceTimes === "object") {
@@ -68,6 +73,7 @@ export class PersonalRecords {
         (this.data.bestLap === null || legacy < this.data.bestLap)
       ) {
         this.data.bestLap = legacy;
+        this.data.bestLapPath = null;
         this.save();
       }
     } catch {
@@ -82,13 +88,17 @@ export class PersonalRecords {
       races: this.data.races,
     };
   }
-  recordLap(time: number): boolean {
+  get bestLapPath(): LapPath | null {
+    return this.data.bestLapPath;
+  }
+  recordLap(time: number, path: LapPath | null = null): boolean {
     if (
       !validTime(time) ||
       (this.data.bestLap !== null && time >= this.data.bestLap)
     )
       return false;
     this.data.bestLap = time;
+    this.data.bestLapPath = readLapPath(path);
     this.save();
     return true;
   }

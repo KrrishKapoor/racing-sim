@@ -20,7 +20,7 @@ const clamp = (v: number, lo: number, hi: number) =>
  * envelope (curvature, engine acceleration, braking and steering limits).
  * The lane margin leaves room for the car body and a small tracking error.
  * This is a numerical local optimum for this driving model, not a proof of a
- * global optimum. AI and the rendered brake/acceleration cues use the same plan.
+ * global optimum. Only AI uses this private plan; the visible ghost follows the player’s PB.
  */
 export class RacingLine {
   readonly points: RacingPoint[];

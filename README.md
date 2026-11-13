@@ -30,19 +30,20 @@ npm run preview  # Serve the production bundle
 | Follow car / circuit overview | C                          |
 | Start race                    | Enter or Start race button |
 
-Touch devices and narrow screens show steering, gas, brake, and drift buttons. Hold buttons to drive; simultaneous pointers are supported. The toolbar offers camera, pause, and reset controls. The racing line can be toggled below the circuit. Switching tabs or losing window focus pauses the race.
+Touch devices and narrow screens show steering, gas, brake, and drift buttons. Hold buttons to drive; simultaneous pointers are supported. The toolbar offers camera, pause, and reset controls. The Racing Line toggle shows a thin dotted trace of your actual fastest lap. There is no line until a PB trajectory exists; no suggested braking or acceleration colours are displayed. Switching tabs or losing window focus pauses the race.
 
 All cars stay stationary through the 3–2–1 countdown, then GO releases the grid. Hold S / ↓ (or the touch BRAKE / R pedal) to brake to a stop, then engage reverse after a short neutral dwell. Reverse is capped at 39.6 km/h and steering reverses naturally. Hold W / ↑ to brake out of reverse and return to drive. Low-speed runoff traction and sliding wall contacts allow recovery without resetting.
 
-Track PB, race PB, completed races, and wins persist locally when browser storage is available. Race PBs compare identical difficulty, car count, and lap count; wins are cumulative. Existing lap records migrate automatically. Blocked storage falls back to in-memory records. Timing uses ordered sector gates and forward track progress; backing across the start line or teleporting between checkpoints cannot award a lap.
+Track PB, race PB, completed races, and wins persist locally when browser storage is available. Race PBs compare identical difficulty, car count, and lap count; wins are cumulative. Track PB time and trajectory are saved together. Existing time-only records migrate automatically and gain a trace when beaten. Blocked storage falls back to in-memory records. Timing uses ordered sector gates and forward track progress; backing across the start line or teleporting between checkpoints cannot award a lap.
 
 ## Modules
 
 - `src/physics.ts` — fixed-step bicycle steering, acceleration/braking, lateral tire grip, handbrake slip, grass drag, barrier response, and car contacts.
 - `src/track.ts` — a closed Catmull–Rom spline with distance sampling and nearest-segment projection.
 - `src/ai.ts` — difficulty-specific launches, pace, cornering, braking horizons, committed passes, Hard defensive lines, and automatic reverse recovery. All cars share the same physics; there is no rubber banding.
-- `src/racing-line.ts` — multiscale constrained lap-time optimization inside the asphalt margins, with curvature/steering limits and a cyclic acceleration/braking speed envelope. The line is a numerical local optimum of that vehicle model, not a guaranteed global optimum. AI follows this same trajectory. Lime means accelerate, coral means brake, and pale white means carry speed.
+- `src/racing-line.ts` — multiscale constrained lap-time optimization inside the asphalt margins, with curvature/steering limits and a cyclic acceleration/braking speed envelope. The line is a numerical local optimum of that vehicle model, not a guaranteed global optimum. This private route is only used by the AI.
 - `src/setup.ts`, `src/grid.ts` — validated race options and spaced grid slots, with the player starting mid-to-back.
+- `src/lap-trace.ts` — bounded spatial sampling of the player’s actual trajectory, with interpolated finish-line endpoints.
 - `src/records.ts` — validated, versioned persistence, race-format record keys, and legacy lap-record migration.
 - `src/race.ts` — configurable lap timing, ordered sectors, splits, and standings.
 - `src/renderer.ts` — cached circuit scenery, kerbs, grid markings, cars, smoothing camera, and fading asphalt skid marks.

@@ -36,7 +36,7 @@ app.innerHTML = `
         <div class="touch-pedals"><button data-control="brake" class="touch-brake" aria-label="Brake or hold to reverse">BRAKE<span class="reverse-pedal-hint">/ R</span></button><button data-control="throttle" class="touch-gas" aria-label="Accelerate">GAS ↑</button></div>
       </div>
     </section>
-    <footer class="race-footer"><div class="keyboard-guide"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span class="or">/</span> <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd><b>DRIVE</b></span><span><kbd class="wide-key">SPACE</kbd><b>DRIFT</b></span><span><kbd>R</kbd><b>RESET</b></span><span><kbd>P</kbd><b>PAUSE</b></span></div><button class="line-toggle" id="racing-line" aria-pressed="true" title="Optimized trajectory: lime accelerates, coral brakes, white carries speed"><span class="toggle-track"><i></i></span> RACING LINE</button></footer>
+    <footer class="race-footer"><div class="keyboard-guide"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span class="or">/</span> <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd><b>DRIVE</b></span><span><kbd class="wide-key">SPACE</kbd><b>DRIFT</b></span><span><kbd>R</kbd><b>RESET</b></span><span><kbd>P</kbd><b>PAUSE</b></span></div><button class="line-toggle" id="racing-line" aria-pressed="true" title="Your fastest lap, traced in dots. Appears after setting a Track PB."><span class="toggle-track"><i></i></span> RACING LINE</button></footer>
     <div class="bottom-note"><span>PRECISION OVER SPEED.</span><span>BUILT FOR THE NEXT LAP <span class="little-arrow">↗</span></span></div>
   </main>`;
 
@@ -282,7 +282,7 @@ function simulate(dt: number): void {
   if (playerProgress.laps.length > lapCount) {
     lapCount = playerProgress.laps.length;
     const lap = playerProgress.laps.at(-1)!;
-    const improved = records.recordLap(lap);
+    const improved = records.recordLap(lap, race.playerLapPath);
     personalBest ||= improved;
   }
   if (playerProgress.finishTime !== null) {
@@ -308,6 +308,7 @@ function frame(timestamp: number): void {
     simulate(FIXED_STEP);
     accumulator -= FIXED_STEP;
   }
+  renderer.setGhostPath(records.bestLapPath);
   renderer.render(cars, elapsed, phase, showLine);
   hudElapsed += elapsed;
   if (hudElapsed >= 1 / 20) {
@@ -348,8 +349,8 @@ if (import.meta.env.DEV)
       trackLength: track.length,
       skidMarks: renderer.skidMarkCount,
       racingLine: {
-        predictedLapTime: track.racingLine.predictedLapTime,
-        centerlineLapTime: track.racingLine.centerlineLapTime,
+        visible: showLine && records.bestLapPath !== null,
+        ghostPoints: records.bestLapPath?.length ?? 0,
       },
     }),
   });

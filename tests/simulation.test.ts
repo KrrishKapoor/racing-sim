@@ -14,6 +14,7 @@ import { Race } from "../src/race.ts";
 import { DEFAULT_SETUP, normalizeSetup } from "../src/setup.ts";
 import type { Difficulty } from "../src/setup.ts";
 import { createGrid } from "../src/grid.ts";
+import { LapTrace, MAX_TRACE_POINTS } from "../src/lap-trace.ts";
 import {
   PersonalRecords,
   RECORDS_KEY,
@@ -21,6 +22,75 @@ import {
 } from "../src/records.ts";
 
 const dt = 1 / 120;
+
+test("actual player lap paths begin empty, finish at the gate, and persist only with a faster PB", () => {
+  const track = new Track();
+  const player = createCar(track, "player", "You", "#fff", 0);
+  const race = new Race(track, [player], 3);
+  const memory = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => memory.get(key) ?? null,
+    setItem: (key: string, value: string) => { memory.set(key, value); },
+  };
+  const records = new PersonalRecords(storage);
+  assert.equal(records.bestLapPath, null);
+  assert.equal(race.playerLapPath, null);
+  const actual: { x: number; y: number }[] = [];
+  for (let d = -22; d < track.length + 10; d += 10) {
+    Object.assign(player, track.pointAt(d, 24 * Math.sin(d / 130)));
+    player.speed = 400;
+    player.projection = track.project(player);
+    actual.push({ x: player.x, y: player.y });
+    race.step([player], 0.025);
+    if (race.drivers.get("player")!.laps.length === 0) assert.equal(race.playerLapPath, null);
+  }
+  assert.equal(race.drivers.get("player")!.laps.length, 1);
+  const path = race.playerLapPath!;
+  assert.ok(path.length > 400 && path.length < MAX_TRACE_POINTS);
+  // All interior samples are real positions, rather than a regenerated ideal line.
+  for (const p of path.slice(1, -1)) assert.ok(actual.some((a) => a.x === p.x && a.y === p.y));
+  const endpoint = track.project(path.at(-1)!);
+  assert.ok(Math.min(endpoint.distance, track.length - endpoint.distance) < 1);
+  const time = race.drivers.get("player")!.laps[0];
+  assert.equal(records.recordLap(time, path), true);
+  const reloaded = new PersonalRecords(storage);
+  assert.deepEqual(reloaded.bestLapPath, path);
+  assert.equal(reloaded.summary(DEFAULT_SETUP).bestLap, time);
+  assert.equal(reloaded.recordLap(time + 1, [{ x: 1, y: 2 }, { x: 3, y: 4 }]), false);
+  assert.deepEqual(new PersonalRecords(storage).bestLapPath, path);
+  const faster = path.map((p) => ({ x: p.x + 2, y: p.y + 1 }));
+  assert.equal(reloaded.recordLap(time - 1, faster), true);
+  faster[0].x = -100; // Persistence owns a copy, independent of later recording.
+  assert.notEqual(reloaded.bestLapPath![0].x, -100);
+  assert.equal(new PersonalRecords(storage).summary(DEFAULT_SETUP).bestLap, time - 1);
+  assert.deepEqual(new PersonalRecords(storage).bestLapPath, reloaded.bestLapPath);
+  assert.equal(new Race(track, [player]).playerLapPath, null);
+});
+
+test("time-only v2 records and corrupt ghosts never fabricate a visible path", () => {
+  for (const bestLapPath of [undefined, [{ x: 1, y: 2 }], [{ x: null, y: 2 }, { x: 3, y: 4 }]]) {
+    const saved = JSON.stringify({ version: 2, bestLap: 15, bestLapPath, raceTimes: {}, wins: 2, races: 4 });
+    const records = new PersonalRecords({ getItem: (key) => key === RECORDS_KEY ? saved : null, setItem: () => {} });
+    assert.equal(records.summary(DEFAULT_SETUP).bestLap, 15);
+    assert.equal(records.bestLapPath, null);
+    assert.equal(records.recordLap(16, [{ x: 1, y: 2 }, { x: 3, y: 4 }]), false);
+    assert.equal(records.bestLapPath, null);
+    assert.equal(records.recordLap(14, [{ x: 1, y: 2 }, { x: 3, y: 4 }]), true);
+    assert.equal(records.bestLapPath!.length, 2);
+  }
+});
+
+test("lap traces remain bounded and consecutive laps share the exact crossing", () => {
+  const trace = new LapTrace({ x: 0, y: 0 });
+  for (let i = 1; i < 100_000; i++) trace.sample({ x: i * 10, y: i % 100 });
+  const finish = { x: 1_000_000, y: 0 };
+  const first = trace.finish(finish);
+  assert.ok(first.length <= MAX_TRACE_POINTS);
+  trace.sample({ x: finish.x + 20, y: 2 });
+  const second = trace.finish({ x: finish.x + 40, y: 4 });
+  assert.deepEqual(first.at(-1), second[0]);
+  assert.equal(second.length, 3);
+});
 test("closed circuit projection and starting grid face the first straight", () => {
   const track = new Track();
   assert.ok(track.length > 4000);
@@ -269,7 +339,7 @@ test("record migration, malformed storage and unavailable storage are safe", () 
   };
   const records = new PersonalRecords(storage);
   assert.equal(records.summary(DEFAULT_SETUP).bestLap, 21.5);
-  assert.ok(JSON.parse(memory.get(RECORDS_KEY)!).version === 2);
+  assert.ok(JSON.parse(memory.get(RECORDS_KEY)!).version === 3);
   assert.equal(records.recordLap(NaN), false);
   assert.equal(records.recordLap(-1), false);
   const blocked = new PersonalRecords({

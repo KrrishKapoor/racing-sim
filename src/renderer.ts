@@ -1,5 +1,6 @@
 import { Track } from "./track";
 import type { Car } from "./physics";
+import type { LapPath } from "./lap-trace";
 
 interface Skid {
   x1: number;
@@ -20,7 +21,8 @@ export class Renderer {
   private skids: Skid[] = [];
   private previousTires = new Map<string, { x: number; y: number }[]>();
   private clock = 0;
-  private readonly linePaths = new Map<string, Path2D>();
+  private ghostSource: LapPath | null = null;
+  private ghostPath: Path2D | null = null;
   overview = false;
   get skidMarkCount(): number {
     return this.skids.length;
@@ -31,22 +33,21 @@ export class Renderer {
     private readonly track: Track,
   ) {
     this.context = canvas.getContext("2d", { alpha: false })!;
-    const line = track.racingLine.points;
-    for (const cue of ["accelerate", "brake", "carry"]) {
-      const path = new Path2D();
-      line.forEach((point, i) => {
-        if (point.cue !== cue) return;
-        const next = line[(i + 1) % line.length];
-        path.moveTo(point.x, point.y);
-        path.lineTo(next.x, next.y);
-      });
-      this.linePaths.set(cue, path);
-    }
     this.scenery = this.buildScenery();
     this.forest = this.context.createPattern(this.buildForestTile(), "repeat");
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(canvas);
     this.resize();
+  }
+  setGhostPath(points: LapPath | null): void {
+    if (points === this.ghostSource) return;
+    this.ghostSource = points;
+    this.ghostPath = null;
+    if (!points?.length) return;
+    const path = new Path2D();
+    points.forEach((p, i) => i === 0 ? path.moveTo(p.x, p.y) : path.lineTo(p.x, p.y));
+    // Do not close an imperfect seam or invent a shortcut between endpoints.
+    this.ghostPath = path;
   }
   private resize(): void {
     const rect = this.canvas.getBoundingClientRect();
@@ -330,26 +331,15 @@ export class Renderer {
       ctx.stroke();
       ctx.restore();
     }
-    if (showLine) {
-      // Keep the line at least ~1.6px on screen, with a dark casing so the
-      // cue colours read on asphalt, kerbs and grass alike.
-      const width = Math.max(3, 1.6 / this.camera.zoom);
+    if (showLine && this.ghostPath) {
+      ctx.save();
       ctx.lineCap = "round";
-      ctx.lineWidth = width * 2.2;
-      ctx.strokeStyle = "rgba(10,14,12,.5)";
-      for (const path of this.linePaths.values()) ctx.stroke(path);
-      ctx.lineWidth = width;
-      ctx.globalAlpha = 0.9;
-      for (const [cue, path] of this.linePaths) {
-        ctx.strokeStyle =
-          cue === "brake"
-            ? "#f18d70"
-            : cue === "accelerate"
-              ? "#d5f55b"
-              : "#dce4ce";
-        ctx.stroke(path);
-      }
-      ctx.globalAlpha = 1;
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 1 / this.camera.zoom;
+      ctx.setLineDash([1 / this.camera.zoom, 6 / this.camera.zoom]);
+      ctx.strokeStyle = "rgba(225,232,208,.42)";
+      ctx.stroke(this.ghostPath);
+      ctx.restore();
     }
     ctx.lineWidth = 3;
     ctx.lineCap = "round";

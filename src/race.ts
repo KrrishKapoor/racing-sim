@@ -1,5 +1,8 @@
 import type { Car } from "./physics";
 import { Track } from "./track";
+import { LapTrace } from "./lap-trace";
+import type { LapPath } from "./lap-trace";
+import type { Vec2 } from "./track";
 
 export interface DriverProgress {
   id: string;
@@ -18,12 +21,20 @@ export class Race {
   readonly totalLaps: number;
   time = 0;
   readonly drivers = new Map<string, DriverProgress>();
+  playerLapPath: LapPath | null = null;
+  private playerTrace: LapTrace | null = null;
+  private previousPlayer: Vec2 | null = null;
   constructor(
     readonly track: Track,
     cars: Car[],
     totalLaps = 3,
   ) {
     this.totalLaps = Math.max(1, Math.min(10, Math.round(totalLaps)));
+    const player = cars.find((car) => car.isPlayer);
+    if (player) {
+      this.playerTrace = new LapTrace(player);
+      this.previousPlayer = { x: player.x, y: player.y };
+    }
     for (const car of cars)
       this.drivers.set(car.id, {
         id: car.id,
@@ -43,6 +54,8 @@ export class Race {
     this.time += dt;
     for (const car of cars) {
       const driver = this.drivers.get(car.id)!;
+      const previousPlayer = this.previousPlayer;
+      if (car.isPlayer) this.previousPlayer = { x: car.x, y: car.y };
       const current = car.projection.distance;
       let delta = current - driver.previousDistance;
       if (delta < -this.track.length / 2) delta += this.track.length;
@@ -53,9 +66,27 @@ export class Race {
         Math.abs(delta) > 55 + car.speed * dt * 2 ||
         car.projection.distanceFromCenter >
           this.track.width / 2 + this.track.runoff
-      )
+      ) {
+        if (car.isPlayer) {
+          this.playerTrace = null;
+          this.playerLapPath = null;
+        }
         continue;
+      }
       driver.distance += delta;
+      // Finish at the interpolated gate crossing, not the next fixed-step sample.
+      const lapEnd = (driver.laps.length + 1) * this.track.length;
+      if (car.isPlayer && driver.finishTime === null && this.playerTrace) {
+        if (delta > 0 && driver.nextGate === 2 && driver.distance >= lapEnd && previousPlayer) {
+          const fraction = 1 - Math.min(1, (driver.distance - lapEnd) / delta);
+          const crossing = {
+            x: previousPlayer.x + (car.x - previousPlayer.x) * fraction,
+            y: previousPlayer.y + (car.y - previousPlayer.y) * fraction,
+          };
+          this.playerLapPath = this.playerTrace.finish(crossing);
+        }
+        this.playerTrace.sample(car);
+      }
       if (driver.finishTime !== null || delta <= 0) continue;
       const threshold =
         driver.laps.length * this.track.length +
